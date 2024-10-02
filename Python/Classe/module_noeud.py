@@ -11,7 +11,7 @@ prix_min_sj = 0 #on part du principe que le prix du sous-jacent ne peut être n�
 
 
 
-# def calcul_forward(pas : int, donnee_marche : DonneeMarche, option : Option, arbre : Arbre, position_arbre : int = 1) -> float :
+# def __calcul_forward(pas : int, donnee_marche : DonneeMarche, option : Option, arbre : Arbre, position_arbre : int = 1) -> float :
 #     """Permet de calculer le prix forward pour n'importe quelle position dans l'arbre
 
 #     Args:
@@ -39,32 +39,31 @@ class Noeud :
         """
         self.prix_sj = prix_sj
         self.arbre = arbre
-        self.position_arbre = position_arbre
+        self.position_arbre = position_arbre  
         
     def __calcul_forward(self) -> float : 
         #permet de calculer le prix forward du prochain noeud
         facteur_temps = self.arbre.donnee_marche.taux_interet * self.arbre.get_temps() * self.arbre.delta_t
         return self.prix_sj * np.exp(facteur_temps)
     
-    def __proba_neg(proba : float) -> None : 
-        if proba < 0 : 
-            raise ValueError ("La probabilité est négative")
+    def __calcul_variance(self) -> float : 
+        return (self.prix_sj ** 2) * np.exp(2 * self.arbre.donnee_marche.taux_interet * self.arbre.delta_t) * (np.exp((self.arbre.donnee_marche.volatilite ** 2) * self.arbre.delta_t) - 1)
     
     def __calcul_proba(self) -> None : 
        
-        p_bas = ((self.futur_centre.prix_sj ** (-2)) * (self.arbre.donnee_marche.volatilite + self.__calcul_forward() ** 2)
-                      - 1 - (self.arbre.alpha + 1) * (self.futur_centre.prix_sj ** (-1)) * self.__calcul_forward() /
-                      ((1 - self.arbre.alpha) * (self.arbre.alpha ** (-2) - 1)))
+        p_bas = ((self.futur_centre.prix_sj ** (-2)) * (self.__calcul_variance() + (self.__calcul_forward() ** 2))
+                      - 1 - (self.arbre.alpha + 1) * ((self.futur_centre.prix_sj ** (-1)) * self.__calcul_forward() - 1)) / ((1 - self.arbre.alpha) * (self.arbre.alpha ** (-2) - 1))
                      
-        p_haut = ((1 / self.futur_centre.prix_sj * self.__calcul_forward() - 1) - (1 / self.arbre.alpha - 1) * self.p_bas /
+        p_haut = ((1 / self.futur_centre.prix_sj * self.__calcul_forward() - 1) - (1 / self.arbre.alpha - 1) * p_bas /
                        (self.arbre.alpha - 1))
         
-        p_mid = 1 - (p_haut - p_haut)
+        p_mid = 1 - p_haut - p_bas
         
         if not p_bas > 0 and p_haut > 0 and p_mid > 0 :
             raise ValueError("Probabilité négative")
         
-        if p_bas + p_haut + p_mid != somme_proba : 
+        if round(p_bas + p_haut + p_mid, 1) != somme_proba : 
+            print(f"p_bas : {p_bas}, p_haut : {p_haut}, p_mid : {p_mid}")
             raise ValueError(f"La somme des probabilités doit être égale à {somme_proba}")
         else :             
             self.p_bas = p_bas
@@ -75,6 +74,7 @@ class Noeud :
         
         self.futur_centre = Noeud(self.__calcul_forward(), self.arbre, self.position_arbre + 1)
         self.futur_centre.parent = self
+        self.__calcul_proba()
         
         self.futur_haut = Noeud(self.futur_centre.prix_sj * self.arbre.alpha, self.arbre, self.position_arbre + 1)
         self.futur_haut.parent = self
@@ -96,11 +96,13 @@ class Noeud :
         if noeud_ref == self :
             #dans le cas où nous nous situons directement sur le futur haut de la racine
             self.futur_centre = self.bas.futur_haut
+            self.__calcul_proba()
             self.futur_bas = self.bas.futur_centre
             
         else : 
             while not noeud_ref == self : 
                 noeud_ref.futur_centre = noeud_ref.bas.futur_haut
+                noeud_ref.__calcul_proba()
                 noeud_ref.futur_bas = noeud_ref.bas.futur_centre
                 noeud_ref.futur_haut = Noeud(noeud_ref.futur_centre.prix_sj * noeud_ref.arbre.alpha, noeud_ref.arbre, noeud_ref.position_arbre + 1)
                 noeud_ref.futur_haut.bas = noeud_ref.futur_centre
@@ -111,6 +113,8 @@ class Noeud :
             
         #on retombe sur notre noeud le plus en haut
         self.futur_haut = Noeud(self.futur_centre.prix_sj * self.arbre.alpha, self.arbre, self.position_arbre + 1)
+        self.__calcul_proba()
+        self.futur_bas.parent = self
         self.futur_haut.bas = self.futur_centre
         self.futur_centre.haut = self.futur_haut
 
@@ -124,11 +128,13 @@ class Noeud :
         if noeud_ref == self :
             #dans le cas où nous nous situons directement sur le futur haut de la racine
             self.futur_centre = self.haut.futur_bas
+            self.__calcul_proba()
             self.futur_haut = self.haut.futur_centre
             
         else : 
             while not noeud_ref == self : 
                 noeud_ref.futur_centre = noeud_ref.haut.futur_bas
+                noeud_ref.__calcul_proba()
                 noeud_ref.futur_haut = noeud_ref.haut.futur_centre
                 noeud_ref.futur_bas = Noeud(noeud_ref.futur_centre.prix_sj * noeud_ref.arbre.alpha**(-1), noeud_ref.arbre, noeud_ref.position_arbre + 1)
                 noeud_ref.futur_bas.haut = noeud_ref.futur_centre
@@ -139,6 +145,7 @@ class Noeud :
             
         #on retombe sur notre noeud le plus en haut
         self.futur_bas = Noeud(self.futur_centre.prix_sj * self.arbre.alpha**(-1), self.arbre, self.position_arbre + 1)
+        self.__calcul_proba()
         self.futur_haut.parent = self
         self.futur_bas.haut = self.futur_centre
         self.futur_centre.bas = self.futur_bas
