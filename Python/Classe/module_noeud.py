@@ -9,21 +9,6 @@ import numpy as np
 somme_proba = 1
 prix_min_sj = 0 #on part du principe que le prix du sous-jacent ne peut être négatif (ce qui dans le cas d'un actif purement financier sera à priori toujours vrai)
 
-
-
-# def __calcul_forward(pas : int, donnee_marche : DonneeMarche, option : Option, arbre : Arbre, position_arbre : int = 1) -> float :
-#     """Permet de calculer le prix forward pour n'importe quelle position dans l'arbre
-
-#     Args:
-#         pas (int): le nombre de pas dans notre modèle
-#         donnee_marche (DonneeMarche): Les données de marché à utiliser
-#         option (Option): L'option de référence
-
-#     Returns:
-#         float: Nous renvoie le prix forward du sous-jacent
-#     """
-#     return donnee_marche.prix_spot * np.exp(donnee_marche.taux_interet * calcul_delta_t(pas, option) * position_arbre)
-
 #%% Classes
 
 class Noeud :
@@ -73,16 +58,14 @@ class Noeud :
     def liaison_centre(self) -> None : 
         
         self.futur_centre = Noeud(self.__calcul_forward(), self.arbre, self.position_arbre + 1)
-        self.futur_centre.parent = self
+        self.futur_centre.precedent_centre = self
         self.__calcul_proba()
         
         self.futur_haut = Noeud(self.futur_centre.prix_sj * self.arbre.alpha, self.arbre, self.position_arbre + 1)
-        self.futur_haut.parent = self
         self.futur_haut.bas = self.futur_centre
         self.futur_centre.haut = self.futur_haut
         
         self.futur_bas = Noeud(self.futur_centre.prix_sj * self.arbre.alpha**(-1), self.arbre, self.position_arbre + 1)
-        self.futur_bas.parent = self
         self.futur_bas.haut = self.futur_centre
         self.futur_centre.bas = self.futur_bas
         
@@ -96,12 +79,15 @@ class Noeud :
         if noeud_ref == self :
             #dans le cas où nous nous situons directement sur le futur haut de la racine
             self.futur_centre = self.bas.futur_haut
+            self.futur_centre.precedent_centre = self
             self.__calcul_proba()
             self.futur_bas = self.bas.futur_centre
+            
             
         else : 
             while not noeud_ref == self : 
                 noeud_ref.futur_centre = noeud_ref.bas.futur_haut
+                noeud_ref.futur_centre.precedent_centre = noeud_ref
                 noeud_ref.__calcul_proba()
                 noeud_ref.futur_bas = noeud_ref.bas.futur_centre
                 noeud_ref.futur_haut = Noeud(noeud_ref.futur_centre.prix_sj * noeud_ref.arbre.alpha, noeud_ref.arbre, noeud_ref.position_arbre + 1)
@@ -114,26 +100,26 @@ class Noeud :
         #on retombe sur notre noeud le plus en haut
         self.futur_haut = Noeud(self.futur_centre.prix_sj * self.arbre.alpha, self.arbre, self.position_arbre + 1)
         self.__calcul_proba()
-        self.futur_bas.parent = self
         self.futur_haut.bas = self.futur_centre
         self.futur_centre.haut = self.futur_haut
+        self.futur_centre.precedent_centre = self
 
     def liaison_bas(self) -> None :         
         noeud_ref = self
           
-        #on descend sur le tronc              
         while not hasattr(noeud_ref.haut, "futur_bas"): 
             noeud_ref = noeud_ref.haut
                  
         if noeud_ref == self :
-            #dans le cas où nous nous situons directement sur le futur haut de la racine
             self.futur_centre = self.haut.futur_bas
+            self.futur_centre.precedent_centre = self
             self.__calcul_proba()
             self.futur_haut = self.haut.futur_centre
             
         else : 
             while not noeud_ref == self : 
                 noeud_ref.futur_centre = noeud_ref.haut.futur_bas
+                noeud_ref.futur_centre.precedent_centre = noeud_ref
                 noeud_ref.__calcul_proba()
                 noeud_ref.futur_haut = noeud_ref.haut.futur_centre
                 noeud_ref.futur_bas = Noeud(noeud_ref.futur_centre.prix_sj * noeud_ref.arbre.alpha**(-1), noeud_ref.arbre, noeud_ref.position_arbre + 1)
@@ -143,84 +129,30 @@ class Noeud :
                 noeud_ref.bas.futur_haut = noeud_ref.futur_centre
                 noeud_ref = noeud_ref.bas
             
-        #on retombe sur notre noeud le plus en haut
         self.futur_bas = Noeud(self.futur_centre.prix_sj * self.arbre.alpha**(-1), self.arbre, self.position_arbre + 1)
         self.__calcul_proba()
         self.futur_haut.parent = self
         self.futur_bas.haut = self.futur_centre
         self.futur_centre.bas = self.futur_bas
+        self.futur_centre.precedent_centre = self
         
-            
-        
-        
-            
-        
-    
-    
-    # def __liaison_tronc(self) -> None : 
-    #     self.futur_centre = Noeud(self.__calcul_forward(), self.arbre, self.position_arbre + 1)
-    #     self.futur_centre.tronc = True
-    #     self.futur_centre.parent = self
-        
-    #     if not hasattr(self, "futur_haut") :
-    #         self.futur_haut = Noeud(self.futur_centre.prix_sj * self.arbre.alpha, self.arbre, self.position_arbre + 1)
-    #         self.futur_haut.haut_tronc = True
-    #         self.futur_haut.bas = self.futur_centre
-    #         self.futur_centre.haut = self.futur_haut
-    #         self.futur_haut.parent = self
-    #     else : 
-    #         self.futur_haut = self.futur_centre.haut
-    #         self.futur_haut.haut_tronc = True
-        
-    #     if not hasattr(self, "futur_bas") : 
-    #         self.futur_bas = Noeud(self.futur_centre.prix_sj * self.arbre.alpha**(-1), self.arbre, self.position_arbre + 1)
-    #         self.futur_bas.bas_tronc = True
-    #         self.futur_bas.haut = self.futur_centre
-    #         self.futur_centre.bas = self.futur_bas
-    #         self.futur_bas.parent = self
-    #     else : 
-    #         self.futur_bas = self.futur_centre.bas
-    #         self.futur_bas.bas_tronc = True
-    
-    # def __liaison_haut(self) -> None : 
-    #     self.futur_centre = Noeud(self.__calcul_forward(), self.arbre, self.position_arbre + 1)
-    #     self.futur_centre.parent = self
-        
-    #     if not hasattr(self.futur_centre, "haut") : 
-    #         self.futur_haut = Noeud(self.futur_centre.prix_sj * self.arbre.alpha, self.arbre, self.position_arbre + 1)
-    #         self.futur_haut.bas = self.futur_centre
-    #         self.futur_centre.haut = self.futur_haut
-    #         self.futur_haut.parent = self
-    #     else : 
-    #         self.futur_haut = self.futur_centre.haut
-        
-    #     self.futur_bas = self.futur_centre.bas
-        
-    # def __liaison_bas(self) -> None : 
-    #     self.futur_centre = Noeud(self.__calcul_forward(), self.arbre, self.position_arbre + 1)
-    #     self.futur_centre.parent = self
-    #     #TODO à remplacer par une procédure "bestmid" pour prendre en compte un versement de dividende
-        
-    #     if not hasattr(self.futur_centre, "bas") : 
-    #         self.futur_bas = Noeud(self.futur_centre.prix_sj * self.arbre.alpha**(-1), self.arbre, self.position_arbre + 1)
-    #         self.futur_bas.haut = self.futur_centre
-    #         self.futur_centre.bas = self.futur_bas
-    #         self.futur_bas.parent = self
-    #     else : 
-    #         self.futur_bas = self.futur_centre.bas
-        
-    #     self.futur_bas = self.futur_centre.bas
-    
-    # def liaisons(self) -> None : 
-        
-    #     if self.tronc == True : 
-    #         return self.__liaison_tronc()
-        
-    #     elif self.bas_tronc == True : 
-    #         return self.__liaison_bas()
-        
-    #     elif self.haut_tronc == True :
-    #         return self.__liaison_haut()
-        
-        
-# %%
+    def calcul_valeur_intrinseque(self) -> None :
+                
+        if self.position_arbre == self.arbre.nb_pas : #si nous somme à la fin de l'arbre
+            if self.arbre.option.call :
+                self.valeur_intrinseque = max(self.prix_sj - self.arbre.option.prix_exercice, 0)
+            else : 
+                self.valeur_intrinseque = max(self.arbre.option.prix_exercice  - self.prix_sj, 0)
+        else : #si nous ne sommes pas à la fin de l'arbre
+                facteur_actualisation = np.exp(-self.arbre.donnee_marche.taux_actualisation * self.arbre.delta_t)
+                vecteur_proba = np.array([self.p_haut, self.p_mid, self.p_bas])
+                vecteur_prix = np.array([self.futur_haut.valeur_intrinseque, self.futur_centre.valeur_intrinseque, self.futur_bas.valeur_intrinseque])
+                self.valeur_intrinseque = facteur_actualisation * vecteur_prix.dot(vecteur_proba) #ici, produit scalaire des prix par leurs probabilités
+                
+#TODO : possible de reproduire la même logique sur tout l'arbre (pricing avec des vecteurs avec un mouvement backward, nous permettant alors de venir de mettre en place de la parallelisation)
+#TODO : le facteur d'actualisation peut être défini comme constante au niveau de l'arbre 
+
+
+#TODO : (Idée) plutôt que venir calculer les probabilités et les prix à chaque création de noeud, venir créer un arbre ne contenant que la structure mais sur lequel nous n'aurons fait aucun calcul.
+#Ensuite, se débrouiller à faire des opération matricielles pour appliquer des probas et prix sur l'ensemble de l'arbre 
+

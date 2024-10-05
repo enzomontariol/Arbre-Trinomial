@@ -7,3 +7,7 @@ from enum import Enum
 class ConventionBaseCalendaire(Enum) :
     _365 = 365
     _360 = 360
+    
+class MethodeConstructionArbre(Enum) : 
+    vanille = "vanille"
+    speed = "speed"

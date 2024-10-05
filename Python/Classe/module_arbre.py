@@ -2,7 +2,7 @@
 
 from module_marche import DonneeMarche
 from module_option import Option
-from module_enums import ConventionBaseCalendaire
+from module_enums import ConventionBaseCalendaire, MethodeConstructionArbre
 
 import numpy as np
 import datetime as dt
@@ -32,7 +32,7 @@ class Arbre :
         self.racine = None
         
         # Noeud(self.donnee_marche.prix_spot, self.donnee_marche, self.option, self.nb_pas, position_arbre = 1)
-
+   
     def get_temps (self, convention_base_calendaire : ConventionBaseCalendaire = ConventionBaseCalendaire._365.value) -> float : 
         """Renvoie le temps à maturité exprimé en nombre d'année .
         
@@ -70,7 +70,7 @@ class Arbre :
         alpha = np.exp(self.donnee_marche.volatilite * np.sqrt(3) * np.sqrt(self.delta_t))
         return alpha 
         
-    def planter_tronc(self) :
+    def planter_tronc(self) -> None :
         """Méthode nous permettant d'instancier l'arbre, de créer le noeud racine puis de construire l'ensemble du tronc à partir de la méthode liaison_centre() du module noeud.
         C'est de ce dernier que nous partirons ensuite pour coonstruire le reste de l'arbre.
         """
@@ -84,7 +84,7 @@ class Arbre :
             noeud_ref.liaison_centre()
             noeud_ref = noeud_ref.futur_centre                     
             
-    def branchage_haut(self) :
+    def branchage_haut(self) -> None :
         """Méthode nous permettant de créer la partie supérieure de l'arbre à partir de la méthode liaison_haut() du module noeud.
         """
 
@@ -94,7 +94,7 @@ class Arbre :
             noeud_ref.liaison_haut()
             noeud_ref = noeud_ref.futur_haut
             
-    def branchage_bas(self) :
+    def branchage_bas(self) -> None :
         """Méthode nous permettant de créer la partie inférieure de l'arbre à partir de la méthode liaison_haut() du module noeud.
         """
          
@@ -104,7 +104,7 @@ class Arbre :
             noeud_ref.liaison_bas()
             noeud_ref = noeud_ref.futur_bas
             
-    def planter_arbre_vanille(self):
+    def planter_arbre_vanille(self) -> None :
         """Cette méthode regroupe les trois méthodes planter_tronc(), branchage_bas et branchage_haut afin de construire l'arbre dans son ensemble.
         L'arbre se construit de manière linéraire : tronc, bas, haut."""  
               
@@ -112,7 +112,7 @@ class Arbre :
         self.branchage_bas()
         self.branchage_haut()
             
-    async def planter_arbre_speed(self):
+    async def planter_arbre_speed(self) -> None :
         """Cette méthode regroupe les trois méthodes planter_tronc(), branchage_bas et branchage_haut afin de construire l'arbre dans son ensemble.
         L'arbre se construit de manière asynchrone pour les branches inférieures et supérieurs : tronc, bas et haut."""  
         
@@ -124,3 +124,52 @@ class Arbre :
             future_bas = loop.run_in_executor(executor, self.branchage_bas)
 
             await asyncio.gather(future_haut, future_bas)
+            
+    def pricer_arbre(self) -> float : 
+        
+        noeud_racine = noeud_ref = self.racine
+        
+        while hasattr(noeud_ref, "futur_haut") : #on se place ici au noeud le plus en haut de la fin de l'arbre
+            noeud_ref = noeud_ref.futur_haut
+        
+        noeud_ref_2 = noeud_ref 
+               
+        while noeud_ref != noeud_racine : 
+            while hasattr(noeud_ref, "bas") : #on calcule la valeur intrinseque des noeuds de la derniere colonne en iterant vers le bas 
+                noeud_ref.calcul_valeur_intrinseque()
+                noeud_ref = noeud_ref.bas
+            noeud_ref.calcul_valeur_intrinseque()
+            noeud_ref_2 = noeud_ref = noeud_ref_2.bas.precedent_centre 
+            
+        noeud_racine.calcul_valeur_intrinseque()
+        self.prix_option  = noeud_racine.valeur_intrinseque
+            
+def main(methode_construction : MethodeConstructionArbre = MethodeConstructionArbre.vanille) : 
+    today = dt.date.today()
+    today_1y = dt.date(today.year+1, today.month, today.day)
+
+    spot = 100
+    vol = 0.20
+    discount_rate = risk_free = 0.03
+
+    nb_pas = 400
+
+    donnée = DonneeMarche(today, spot, vol, discount_rate, risk_free)
+    option = Option(maturite=today_1y, prix_exercice=100)
+
+    arbre = Arbre(nb_pas, donnée, option)
+
+    if methode_construction == MethodeConstructionArbre.vanille : 
+        arbre.planter_arbre_vanille()
+    else :  
+        arbre.planter_arbre_speed()
+    
+    arbre.pricer_arbre()      
+    
+    return arbre.prix_option
+          
+if __name__ == '__main__' : 
+    now = dt.datetime.now()
+    result = main(MethodeConstructionArbre.vanille)  
+    print(f"Résultat au bout de : {dt.datetime.now() - now}")
+    print (f"Le prix de l'option est : {result}")
