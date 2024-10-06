@@ -1,17 +1,12 @@
 #%% Imports
 
-from module_marche import DonneeMarche
-from module_option import Option
-from module_enums import ConventionBaseCalendaire, MethodeConstructionArbre
-
 import numpy as np
-import datetime as dt
 import concurrent.futures
 import asyncio
 
-#%% Fonctions 
-
-
+from Classes.module_marche import DonneeMarche
+from Classes.module_option import Option
+from Classes.module_enums import ConventionBaseCalendaire
 
 #%% Classes
 
@@ -74,7 +69,7 @@ class Arbre :
         """Méthode nous permettant d'instancier l'arbre, de créer le noeud racine puis de construire l'ensemble du tronc à partir de la méthode liaison_centre() du module noeud.
         C'est de ce dernier que nous partirons ensuite pour coonstruire le reste de l'arbre.
         """
-        from module_noeud import Noeud
+        from Classes.module_noeud import Noeud
         
         self.racine = Noeud(prix_sj = self.donnee_marche.prix_spot, arbre = self, position_arbre=0)
         
@@ -125,7 +120,7 @@ class Arbre :
 
             await asyncio.gather(future_haut, future_bas)
             
-    def pricer_arbre(self) -> float : 
+    def pricer_arbre(self) -> None : 
         
         noeud_racine = noeud_ref = self.racine
         
@@ -143,33 +138,3 @@ class Arbre :
             
         noeud_racine.calcul_valeur_intrinseque()
         self.prix_option  = noeud_racine.valeur_intrinseque
-            
-def main(methode_construction : MethodeConstructionArbre = MethodeConstructionArbre.vanille) : 
-    today = dt.date.today()
-    today_1y = dt.date(today.year+1, today.month, today.day)
-
-    spot = 100
-    vol = 0.20
-    discount_rate = risk_free = 0.03
-
-    nb_pas = 400
-
-    donnée = DonneeMarche(today, spot, vol, discount_rate, risk_free)
-    option = Option(maturite=today_1y, prix_exercice=100)
-
-    arbre = Arbre(nb_pas, donnée, option)
-
-    if methode_construction == MethodeConstructionArbre.vanille : 
-        arbre.planter_arbre_vanille()
-    else :  
-        arbre.planter_arbre_speed()
-    
-    arbre.pricer_arbre()      
-    
-    return arbre.prix_option
-          
-if __name__ == '__main__' : 
-    now = dt.datetime.now()
-    result = main(MethodeConstructionArbre.vanille)  
-    print(f"Résultat au bout de : {dt.datetime.now() - now}")
-    print (f"Le prix de l'option est : {result}")

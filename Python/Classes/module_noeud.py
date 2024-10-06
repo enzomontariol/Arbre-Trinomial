@@ -1,6 +1,6 @@
 #%% Imports
 
-from module_arbre import Arbre
+from Classes.module_arbre import Arbre
 
 import numpy as np
 
