@@ -11,7 +11,7 @@ from Classes.module_enums import ConventionBaseCalendaire
 #%% Classes
 
 class Arbre : 
-    def __init__(self, nb_pas : int, donnee_marche : DonneeMarche, option : Option) -> None:
+    def __init__(self, nb_pas : int, donnee_marche : DonneeMarche, option : Option, convention_base_calendaire : ConventionBaseCalendaire = ConventionBaseCalendaire._365.value) -> None:
         """Initialisation de la classe
 
         Args:
@@ -22,22 +22,19 @@ class Arbre :
         self.nb_pas = nb_pas
         self.donnee_marche = donnee_marche
         self.option = option
+        self.convention_base_calendaire = convention_base_calendaire
         self.delta_t = self.__calcul_delta_t()
+        self.position_div = self.__calcul_position_div()
         self.alpha = self.__calcul_alpha()
         self.racine = None
-        
-        # Noeud(self.donnee_marche.prix_spot, self.donnee_marche, self.option, self.nb_pas, position_arbre = 1)
-   
-    def get_temps (self, convention_base_calendaire : ConventionBaseCalendaire = ConventionBaseCalendaire._365.value) -> float : 
+           
+    def get_temps (self) -> float : 
         """Renvoie le temps à maturité exprimé en nombre d'année .
-        
-        Attributs: 
-            convention_base (ConventionBaseCalendaire): la base annuelle en nombre de jours. Valeur par défaut : 360. Les valeurs possibles sont 365 ou 360 (voir les attributs de la classe enum correspondante).
 
-        Retourne:
+        Returns:
             float: temps à maturité en nombre d'année
         """
-        return (self.option.maturite - self.option.date_pricing).days/convention_base_calendaire
+        return (self.option.maturite - self.option.date_pricing).days/self.convention_base_calendaire
     
     def __calcul_delta_t (self) -> float : 
         """Permet de calculet l'intervalle de temps de référence qui sera utilisée dans notre modèle.
@@ -54,17 +51,22 @@ class Arbre :
     def __calcul_alpha (self) -> float : 
         """Fonction nous permettant de calculer alpha, que nous utiliserons dans l'arbre
 
-        Arguments:
+        Args:
             pas (int) : le nombre de pas dans notre modèlé
             donnee_marche (DonneeMarche): Les données de marché à utiliser
             option (Option): Les caractéristiques de l'option
 
-        Retour:
+        Returns:
             float: Nous renvoie le coefficient alpha
         """
         alpha = np.exp(self.donnee_marche.volatilite * np.sqrt(3) * np.sqrt(self.delta_t))
         return alpha 
-        
+    
+    def __calcul_position_div (self) -> float : 
+        nb_jour_detachement = (self.donnee_marche.dividende_ex_date - self.option.date_pricing).days
+        position_div = nb_jour_detachement / self.convention_base_calendaire / self.delta_t
+        return position_div
+    
     def planter_tronc(self) -> None :
         """Méthode nous permettant d'instancier l'arbre, de créer le noeud racine puis de construire l'ensemble du tronc à partir de la méthode liaison_centre() du module noeud.
         C'est de ce dernier que nous partirons ensuite pour coonstruire le reste de l'arbre.

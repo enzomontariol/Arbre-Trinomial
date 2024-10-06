@@ -15,3 +15,5 @@ class DonneeMarche :
     volatilite : float
     taux_interet : float 
     taux_actualisation : float
+    dividende_ex_date : dt.date
+    dividende_montant : float

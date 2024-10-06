@@ -9,20 +9,21 @@ from Classes.module_enums import MethodeConstructionArbre
 
 
 def main(methode_construction : MethodeConstructionArbre = MethodeConstructionArbre.vanille) -> float : 
-    # today = dt.date.today()
-    today = dt.date(2024,1,1)
+    today = dt.date.today()
     today_1y = dt.date(today.year+1, today.month, today.day)
 
-    spot = 132
-    vol = 0.23
+    spot = 100
+    vol = 0.2
     discount_rate = risk_free = 0.04
+    dividende_ex_date = dt.date(today.year+1, today.month-6, today.day)
+    dividende_montant = 4
 
-    strike = 200
+    strike = 100
     expiry = today_1y
 
-    nb_pas = 100
+    nb_pas = 2000
 
-    donnée = DonneeMarche(today, spot, vol, discount_rate, risk_free)
+    donnée = DonneeMarche(today, spot, vol, discount_rate, risk_free, dividende_ex_date=dividende_ex_date, dividende_montant=dividende_montant)
     option = Option(maturite = expiry, prix_exercice = strike, call = True, date_pricing = today)
 
     arbre = Arbre(nb_pas, donnée, option)
@@ -32,8 +33,8 @@ def main(methode_construction : MethodeConstructionArbre = MethodeConstructionAr
     else :  
         arbre.planter_arbre_speed()
     
-    arbre.pricer_arbre()      
-    
+    arbre.pricer_arbre()  
+
     return arbre.prix_option
           
 if __name__ == '__main__' : 

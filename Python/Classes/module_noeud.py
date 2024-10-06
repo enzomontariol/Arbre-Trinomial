@@ -28,8 +28,14 @@ class Noeud :
         
     def __calcul_forward(self) -> float : 
         #permet de calculer le prix forward du prochain noeud
-        facteur_temps = self.arbre.donnee_marche.taux_interet * self.arbre.get_temps() * self.arbre.delta_t
-        return self.prix_sj * np.exp(facteur_temps)
+        facteur_capitalisation = self.arbre.donnee_marche.taux_interet * self.arbre.delta_t
+        
+        if self.position_arbre < self.arbre.position_div and self.position_arbre + 1 > self.arbre.position_div : 
+            div = self.arbre.donnee_marche.dividende_montant
+        else : 
+            div = 0
+            
+        return self.prix_sj * np.exp(facteur_capitalisation) - div
     
     def __calcul_variance(self) -> float : 
         return (self.prix_sj ** 2) * np.exp(2 * self.arbre.donnee_marche.taux_interet * self.arbre.delta_t) * (np.exp((self.arbre.donnee_marche.volatilite ** 2) * self.arbre.delta_t) - 1)
@@ -155,4 +161,3 @@ class Noeud :
 
 #TODO : (Idée) plutôt que venir calculer les probabilités et les prix à chaque création de noeud, venir créer un arbre ne contenant que la structure mais sur lequel nous n'aurons fait aucun calcul.
 #Ensuite, se débrouiller à faire des opération matricielles pour appliquer des probas et prix sur l'ensemble de l'arbre 
-
