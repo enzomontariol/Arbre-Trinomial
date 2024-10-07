@@ -28,14 +28,13 @@ class Noeud :
         
     def __calcul_forward(self) -> float : 
         #permet de calculer le prix forward du prochain noeud
-        facteur_capitalisation = self.arbre.donnee_marche.taux_interet * self.arbre.delta_t
         
         if self.position_arbre < self.arbre.position_div and self.position_arbre + 1 > self.arbre.position_div : 
             div = self.arbre.donnee_marche.dividende_montant
         else : 
             div = 0
             
-        return self.prix_sj * np.exp(facteur_capitalisation) - div
+        return self.prix_sj * self.arbre.facteur_capitalisation - div
     
     def __calcul_variance(self) -> float : 
         return (self.prix_sj ** 2) * np.exp(2 * self.arbre.donnee_marche.taux_interet * self.arbre.delta_t) * (np.exp((self.arbre.donnee_marche.volatilite ** 2) * self.arbre.delta_t) - 1)
@@ -143,18 +142,36 @@ class Noeud :
         self.futur_centre.precedent_centre = self
         
     def calcul_valeur_intrinseque(self) -> None :
-                
-        if self.position_arbre == self.arbre.nb_pas : #si nous somme à la fin de l'arbre
-            if self.arbre.option.call :
-                self.valeur_intrinseque = max(self.prix_sj - self.arbre.option.prix_exercice, 0)
+        
+
+
+        if self.position_arbre == self.arbre.nb_pas : #si nous somme à la fin de l'arbre, nous prenons le maximum entre le payoff de l'option et 0
+            
+            if self.arbre.option.call : 
+                payoff = self.prix_sj - self.arbre.option.prix_exercice
             else : 
-                self.valeur_intrinseque = max(self.arbre.option.prix_exercice  - self.prix_sj, 0)
-        else : #si nous ne sommes pas à la fin de l'arbre
-                facteur_actualisation = np.exp(-self.arbre.donnee_marche.taux_actualisation * self.arbre.delta_t)
-                vecteur_proba = np.array([self.p_haut, self.p_mid, self.p_bas])
-                vecteur_prix = np.array([self.futur_haut.valeur_intrinseque, self.futur_centre.valeur_intrinseque, self.futur_bas.valeur_intrinseque])
-                self.valeur_intrinseque = facteur_actualisation * vecteur_prix.dot(vecteur_proba) #ici, produit scalaire des prix par leurs probabilités
+                payoff = self.arbre.option.prix_exercice  - self.prix_sj
                 
+            self.valeur_intrinseque = max(payoff, 0)
+            
+        else : #si nous ne sommes pas à la fin de l'arbre, 
+            
+            vecteur_proba = np.array([self.p_haut, self.p_mid, self.p_bas]) #vecteur composé des probabilités des noeuds futurs du noeud actuel
+            vecteur_prix = np.array([self.futur_haut.valeur_intrinseque, self.futur_centre.valeur_intrinseque, self.futur_bas.valeur_intrinseque]) #
+            valeur_intrinseque = self.arbre.facteur_actualisation * vecteur_prix.dot(vecteur_proba) #ici, produit scalaire des prix par leurs probabilités
+            
+            if self.arbre.option.americaine : #dans le cas d'une option américaine, la valeur d'un noeud est égal au maximum entre le payoff de l'option et la valeur intrinseque définie plus haut 
+                
+                if self.arbre.option.call : 
+                    payoff = self.prix_sj - self.arbre.option.prix_exercice
+                else : 
+                    payoff = self.arbre.option.prix_exercice  - self.prix_sj
+                
+                self.valeur_intrinseque = max(payoff, valeur_intrinseque) 
+            else : #le prix est égal au produit scalaire du vecteur des prix des noeuds précédents par le vecteur de leurs probabilités pour un call 
+                
+                self.valeur_intrinseque = valeur_intrinseque 
+                    
 #TODO : possible de reproduire la même logique sur tout l'arbre (pricing avec des vecteurs avec un mouvement backward, nous permettant alors de venir de mettre en place de la parallelisation)
 #TODO : le facteur d'actualisation peut être défini comme constante au niveau de l'arbre 
 

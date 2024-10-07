@@ -24,6 +24,8 @@ class Arbre :
         self.option = option
         self.convention_base_calendaire = convention_base_calendaire
         self.delta_t = self.__calcul_delta_t()
+        self.facteur_capitalisation = self.__calcul_facteur_capitalisation()
+        self.facteur_actualisation = self.__calcul_facteur_actualisation()
         self.position_div = self.__calcul_position_div()
         self.alpha = self.__calcul_alpha()
         self.racine = None
@@ -47,6 +49,14 @@ class Arbre :
             float: l'intervalle de temps delta_t
         """
         return self.get_temps() / self.nb_pas
+    
+    def __calcul_facteur_capitalisation(self) -> float : 
+        
+        return np.exp(self.donnee_marche.taux_interet * self.delta_t)
+    
+    def __calcul_facteur_actualisation(self) -> float :
+        
+        return np.exp(-self.donnee_marche.taux_actualisation * self.delta_t)
  
     def __calcul_alpha (self) -> float : 
         """Fonction nous permettant de calculer alpha, que nous utiliserons dans l'arbre
