@@ -12,16 +12,21 @@ def main(methode_construction : MethodeConstructionArbre = MethodeConstructionAr
     today = dt.date.today()
     today_1y = dt.date(today.year+1, today.month, today.day)
 
-    spot = 100
-    vol = 0.2
-    discount_rate = risk_free = 0.04
-    dividende_ex_date = dt.date(today.year+1, today.month-6, today.day)
-    dividende_montant = 4
+    spot = 100 #st.session_state["StockPrice"]
+    vol = 0.2 #st.session_state["Volatilite"]
+    discount_rate = risk_free = 0.04 #st.session_state["TauxInteret"]
+    dividende_ex_date = dt.date(today.year+1, today.month-6, today.day) #st.session_state["ExDateDividende"]
+    dividende_montant = 4 #st.session_state["Dividende"]
 
-    strike = 100
-    expiry = today_1y
+    strike = 100 #st.session_state["Strike"]
+    expiry = today_1y #st.session_state["Maturite"]
 
-    nb_pas = 2000
+    nb_pas = 400 #st.session_state["NbStep"]
+
+    #pricing_date = st.session_state["PricingDate"]
+    #type_option = st.session_state["Optiontype"]
+    #type_exercise = st.session_state["Exercicetype"]
+
 
     donnée = DonneeMarche(today, spot, vol, discount_rate, risk_free, dividende_ex_date=dividende_ex_date, dividende_montant=dividende_montant)
     option = Option(maturite = expiry, prix_exercice = strike, call = True, date_pricing = today)
@@ -98,23 +103,23 @@ with tab1 :
     col1, col2, col3 = st.columns(3)  # Ajuste les valeurs pour contrôler la largeur relative
 
     with col1:
-        StockPrice = st.number_input("Entrez le prix de départ du sous-jacent :", format="%.2f")
-        Volatilité = st.number_input("Entrez le niveau de volatilité :", format="%.2f")
-        TauxInteret = st.number_input("Entrez le niveau de taux d'intérêt :", format="%.2f")
-        Dividende = st.number_input("Entrez le montant de dividende :", format="%.2f")
-        ExDateDividende = st.date_input("Entrez la date de dividende :")
+        st.number_input("Entrez le prix de départ du sous-jacent :", format="%.2f", key ="StockPrice")
+        st.number_input("Entrez le niveau de volatilité :", format="%.2f", key ="Volatilite")
+        st.number_input("Entrez le niveau de taux d'intérêt :", format="%.2f", key ="TauxInteret")
+        st.number_input("Entrez le montant de dividende :", format="%.2f", key ="Dividende")
+        st.date_input("Entrez la date de dividende :", key ="ExDateDividende")
     
     with col2:
-        Maturité = st.date_input("Entrez une date de maturité :")
-        Options = ['Call','Put']
-        Optiontype = st.selectbox("Choisissez le type de l'option :", Options)
+        st.date_input("Entrez une date de maturité :", key ="Maturite")
+        Optionstype = ['Call','Put']
+        st.selectbox("Choisissez le type de l'option :", Optionstype, key ="Optiontype")
         Options = ['Européen','Americain']
-        Exercicetype = st.selectbox("Choisissez le type de l'exercice :", Options)
-        Strike = st.number_input("Entrez le prix d'exercice de l'option :", format="%.2f")
+        st.selectbox("Choisissez le type de l'exercice :", Options, key ="Exercicetype")
+        st.number_input("Entrez le prix d'exercice de l'option :", format="%.2f", key ="Strike")
     
     with col3:
-        PricingDate = st.date_input("Entrez une date de pricing :")
-        NbStep = st.number_input("Entrez le nombre de pas de l'arbre :", format="%.0f")
+        st.date_input("Entrez une date de pricing :", key ="PricingDate")
+        st.number_input("Entrez le nombre de pas de l'arbre :", format="%.0f", key ="NbStep")
 
 with tab2 : 
 
@@ -122,26 +127,26 @@ with tab2 :
     col1, col2, col3 = st.columns(3)  # Ajuste les valeurs pour contrôler la largeur relative
 
     with col1:
-        AlphaParameter = st.number_input("Entrez le paramètre alpha :", format="%.0f")#,placeholder="salu")
-        YearBase = st.number_input("Entrez la base annuelle :", format="%.0f")
+        st.number_input("Entrez le paramètre alpha :", format="%.0f", key ="AlphaParameter")
+        st.number_input("Entrez la base annuelle :", format="%.0f", key ="YearBase")
 
 with tab3:
     st.subheader("A tab with a chart")
     st.line_chart(data)
 
-def test():
-    st.write("code lanceeeeeeeeeer", StockPrice)
-
 if st.button("Lancer le Code"):
-    result = test()
-    st.write(f"Veuillez remplir tous les champs correctement.{result}")
-
-
+    now = dt.datetime.now()
+    result = main()  
+    print(f"Résultat au bout de : {dt.datetime.now() - now}")
+    print (f"Le prix de l'option est : {result}")
+    st.write("code lanceeeeeeeeeer", result, st.session_state["ExDateDividende"], type(st.session_state["ExDateDividende"]))
+    st.write(st.session_state)
+    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 #######################################################################
 #######################################################################
 #######################################################################
 #######################################################################
-          
+exit()       
 if __name__ == '__main__' : 
     now = dt.datetime.now()
     result = main()  
