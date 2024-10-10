@@ -1,8 +1,6 @@
 #%% Imports
 
 import numpy as np
-import concurrent.futures
-import asyncio
 
 from Classes.module_marche import DonneeMarche
 from Classes.module_option import Option
@@ -111,7 +109,7 @@ class Arbre :
             noeud_ref.liaison_bas()
             noeud_ref = noeud_ref.futur_bas
             
-    def planter_arbre_vanille(self) -> None :
+    def planter_arbre(self) -> None :
         """Cette méthode regroupe les trois méthodes planter_tronc(), branchage_bas et branchage_haut afin de construire l'arbre dans son ensemble.
         L'arbre se construit de manière linéraire : tronc, bas, haut."""  
               
@@ -119,20 +117,9 @@ class Arbre :
         self.branchage_bas()
         self.branchage_haut()
             
-    async def planter_arbre_speed(self) -> None :
-        """Cette méthode regroupe les trois méthodes planter_tronc(), branchage_bas et branchage_haut afin de construire l'arbre dans son ensemble.
-        L'arbre se construit de manière asynchrone pour les branches inférieures et supérieurs : tronc, bas et haut."""  
-        
-        self.planter_tronc()
-        
-        loop = asyncio.get_event_loop()
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_haut = loop.run_in_executor(executor, self.branchage_haut)
-            future_bas = loop.run_in_executor(executor, self.branchage_bas)
-
-            await asyncio.gather(future_haut, future_bas)
-            
     def pricer_arbre(self) -> None : 
+        
+        self.planter_arbre()
         
         noeud_racine = noeud_ref = self.racine
         

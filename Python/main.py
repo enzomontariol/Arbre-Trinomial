@@ -32,11 +32,6 @@ def main(methode_construction : MethodeConstructionArbre = MethodeConstructionAr
     option = Option(maturite = expiry, prix_exercice = strike, call = True, date_pricing = today)
 
     arbre = Arbre(nb_pas, donnée, option)
-
-    if methode_construction == MethodeConstructionArbre.vanille : 
-        arbre.planter_arbre_vanille()
-    else :  
-        arbre.planter_arbre_speed()
     
     arbre.pricer_arbre()  
 

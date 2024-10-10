@@ -11,3 +11,16 @@ class ConventionBaseCalendaire(Enum) :
 class MethodeConstructionArbre(Enum) : 
     vanille = "vanille"
     speed = "speed"
+    
+class OptionTypeBS (Enum) : 
+    call = "call"
+    put = "put"
+
+class ExerciseType (Enum) : 
+    europeen = "europeen"
+    americain = "americain"
+
+class DifferenceFinieType (Enum) : 
+    avant = "avant"
+    centree = "centree"
+    arriere = "arriere"
