@@ -40,16 +40,10 @@ class GrecquesEmpiriques :
             
     def approxime_delta(self) -> float : 
         ds = self.var_s * self.arbre.donnee_marche.prix_spot
-       
-        if self.difference_finie_type is DifferenceFinieType.avant : 
-            nouvel_arbre_1 = self.__pricer_arbre_choc("prix_spot", ds)
-            delta = (nouvel_arbre_1.prix_option - self.arbre.prix_option) / self.var_s
-            
-        elif self.difference_finie_type is DifferenceFinieType.centree : 
-            _ds = -self.var_s * self.arbre.donnee_marche.prix_spot
-            nouvel_arbre_1 = self.__pricer_arbre_choc("prix_spot", ds)
-            nouvel_arbre_2 = self.__pricer_arbre_choc("prix_spot", _ds)
-            delta = (nouvel_arbre_1.prix_option - nouvel_arbre_2.prix_option) / 2 * self.var_s
+        neg_ds = -self.var_s * self.arbre.donnee_marche.prix_spot
+        nouvel_arbre_1 = self.__pricer_arbre_choc("prix_spot", ds)
+        nouvel_arbre_2 = self.__pricer_arbre_choc("prix_spot", neg_ds)
+        delta = (nouvel_arbre_1.prix_option - nouvel_arbre_2.prix_option) / 2 * self.var_s
     
         #on stocke dans la classe la valeur de l'arbre choqué pour ne pas à avoir à recalculer si on calcule une dérivée de second ordre
         if not hasattr(self, "prix_nouvel_arbre_ds_1") :             
@@ -64,14 +58,14 @@ class GrecquesEmpiriques :
     def approxime_gamma(self) -> float : 
         
         ds = self.var_s * self.arbre.donnee_marche.prix_spot
-        _ds = _ds = -self.var_s * self.arbre.donnee_marche.prix_spot
+        neg_ds  = -self.var_s * self.arbre.donnee_marche.prix_spot
         
         if not hasattr(self, "prix_nouvel_arbre_ds_1") : 
             nouvel_arbre_1 = self.__pricer_arbre_choc("prix_spot", ds)
             self.prix_nouvel_arbre_ds_1 = nouvel_arbre_1.prix_option
             
         if not hasattr(self, "prix_nouvel_arbre_ds_2") : 
-            nouvel_arbre_2 = self.__pricer_arbre_choc("prix_spot", _ds)
+            nouvel_arbre_2 = self.__pricer_arbre_choc("prix_spot", neg_ds)
             self.prix_nouvel_arbre_ds_2 = nouvel_arbre_2.prix_option
             
         gamma = (self.prix_nouvel_arbre_ds_1 - 2 * self.arbre.prix_option + self.prix_nouvel_arbre_ds_2) / (self.var_s**2)
@@ -81,16 +75,10 @@ class GrecquesEmpiriques :
     def approxime_vega(self) -> float : 
         
         dv = self.var_v * self.arbre.donnee_marche.volatilite
-       
-        if self.difference_finie_type is DifferenceFinieType.avant : 
-            nouvel_arbre_1 = self.__pricer_arbre_choc("volatilite", dv)
-            vega = (nouvel_arbre_1.prix_option - self.arbre.prix_option) / self.var_v
-            
-        elif self.difference_finie_type is DifferenceFinieType.centree : 
-            _dv = -self.var_v * self.arbre.donnee_marche.volatilite
-            nouvel_arbre_1 = self.__pricer_arbre_choc("volatilite", dv)
-            nouvel_arbre_2 = self.__pricer_arbre_choc("volatilite", _dv)
-            vega = (nouvel_arbre_1.prix_option - nouvel_arbre_2.prix_option) / 2 * self.var_v
+        neg_dv = -self.var_v * self.arbre.donnee_marche.volatilite
+        nouvel_arbre_1 = self.__pricer_arbre_choc("volatilite", dv)
+        nouvel_arbre_2 = self.__pricer_arbre_choc("volatilite", neg_dv)
+        vega = (nouvel_arbre_1.prix_option - nouvel_arbre_2.prix_option) / 2 * self.var_v
     
         #on stocke dans la classe la valeur de l'arbre choqué pour ne pas à avoir à recalculer si on calcule une dérivée de second ordre
         if not hasattr(self, "vol_nouvel_arbre_ds_1") :             
@@ -119,16 +107,10 @@ class GrecquesEmpiriques :
     def approxime_rho(self) -> float : 
         
         dr = self.var_r * self.arbre.donnee_marche.taux_interet
-        
-        if self.difference_finie_type is DifferenceFinieType.avant : 
-            nouvel_arbre_1 = self.__pricer_arbre_choc("taux_interet", dr)
-            rho = (nouvel_arbre_1.prix_option - self.arbre.prix_option) / self.var_v
-            
-        elif self.difference_finie_type is DifferenceFinieType.centree : 
-            _dr = -self.var_r * self.arbre.donnee_marche.taux_interet
-            nouvel_arbre_1 = self.__pricer_arbre_choc("taux_interet", dr)
-            nouvel_arbre_2 = self.__pricer_arbre_choc("taux_interet", _dr)
-            rho = (nouvel_arbre_1.prix_option - nouvel_arbre_2.prix_option) / 2 * self.var_r
+        neg_dr = -self.var_r * self.arbre.donnee_marche.taux_interet
+        nouvel_arbre_1 = self.__pricer_arbre_choc("taux_interet", dr)
+        nouvel_arbre_2 = self.__pricer_arbre_choc("taux_interet", neg_dr)
+        rho = (nouvel_arbre_1.prix_option - nouvel_arbre_2.prix_option) / 2 * self.var_r
     
         #on stocke dans la classe la valeur de l'arbre choqué pour ne pas à avoir à recalculer si on calcule une dérivée de second ordre
         if not hasattr(self, "taux_nouvel_arbre_ds_1") :             

@@ -19,8 +19,3 @@ class OptionTypeBS (Enum) :
 class ExerciseType (Enum) : 
     europeen = "europeen"
     americain = "americain"
-
-class DifferenceFinieType (Enum) : 
-    avant = "avant"
-    centree = "centree"
-    arriere = "arriere"
