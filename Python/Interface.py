@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # import résultat du VBA
-from mainVBA import greekstab, VBAtabAnalysis
+from mainVBA import greekstab, VBAprice, VBAdata
 cheminVBA = r'C:\Users\lince\Downloads\Trinomial_VBA_FINAL_VERSION.xlsm'
 
 # import des fonctions Black Scholes
@@ -138,25 +138,30 @@ BS_Argument = (st.session_state["Optiontype"], st.session_state["Exercicetype"],
                      st.session_state["Volatilite"])
 BSPriceValue = BS_Pricer(*BS_Argument)
 
-dfVBA = VBAtabAnalysis(cheminVBA)
+StepList = [5] + [x for x in range(10,101,10)] + [x for x in range(120,401,20)] + [x for x in range(450,551,50)]
+# Calculer les valeurs de la fonction pour chaque entier
+#PythonValues = [main(100, 0.02, 0.03, 100, date(2024,10,1),3,date(2025,10,1),x,date(2024,9,1),"Call", "Européen") for x in StepList]
+PythonValues = [np.nan for x in StepList]
+dfVBA, BS_VBA, BSVBATime = VBAdata(cheminVBA)
 
-result = 10
 with tab4:
-    st.write("Selon la formule de Black-Scholes en python, le prix de l'option est ", BSPriceValue," .")
-    st.write("Selon la formule de Black-Scholes en VBA, le prix de l'option est ", result," .")
+    st.write("Avec la formule de Black-Scholes en python, le prix de l'option est ", BSPriceValue,
+             " et est calculé en ", np.nan, ' seconds.')
+    st.write("Avec la formule de Black-Scholes en VBA, le prix de l'option est ", BS_VBA,
+             " et est calculé en ", BSVBATime, ' seconds.')
 
     data = {
         'Steps': dfVBA['Steps'].tolist(),
-        'Tree Price Python': [x for x in range(len(dfVBA))],
+        'Tree Price Python': PythonValues,
         'Tree Price VBA': dfVBA['Trinomial Tree Price'].tolist(),
 
-        'Tree Time Python': [x for x in range(len(dfVBA))],
+        'Tree Time Python': [np.nan for x in range(len(dfVBA))],
         'Tree Time VBA': dfVBA['Trinomial Tree Time'].tolist(),
 
-        'Convergence Price BS - Python': [x for x in range(len(dfVBA))],
+        'Convergence Price BS - Python': [np.nan for x in range(len(dfVBA))],
         'Convergence Price BS - VBA': dfVBA['Convergence avec Black-Scholes'].tolist(),
 
-        'Convergence Time BS - Python': [x for x in range(len(dfVBA))],
+        'Convergence Time BS - Python': [np.nan for x in range(len(dfVBA))],
         'Convergence Time BS - VBA': dfVBA['Time Gap avec Black-Scholes'].tolist(),
     }
 
@@ -169,19 +174,17 @@ with tab4:
 ###########################################################################  
 
 with tab5:
-    st.write("Selon la formule de Black-Scholes en python, le prix de l'option est ", result," .")
-    st.write("Selon la formule de Black-Scholes en VBA, le prix de l'option est ", result," .")
-    
+
     data = {
         'Steps': dfVBA['Steps'].tolist(),
-        'Trinomial Tree Price Python': [x for x in range(len(dfVBA))],
+        'Trinomial Tree Price Python': [np.nan for x in range(len(dfVBA))],
         'Trinomial Tree Price VBA': dfVBA['Trinomial Tree Price'].tolist(),
 
-        'Trinomial Tree Time Python': [x for x in range(len(dfVBA))],
+        'Trinomial Tree Time Python': [np.nan for x in range(len(dfVBA))],
         'Trinomial Tree Time VBA': dfVBA['Trinomial Tree Time'].tolist(),
 
-        'Convergence Price Python - VBA': [x for x in range(len(dfVBA))],
-        'Convergence Time Python - VBA': [x for x in range(len(dfVBA))],
+        'Convergence Price Python - VBA': [a - b for a, b in zip([np.nan for x in range(len(dfVBA))], dfVBA['Trinomial Tree Price'].tolist())] ,
+        'Convergence Time Python - VBA': [a - b for a, b in zip([np.nan for x in range(len(dfVBA))], dfVBA['Trinomial Tree Time'].tolist())],
     }
 
     df = pd.DataFrame(data)
@@ -197,14 +200,14 @@ with tab6:
     # Exemple de données
     data = {
         'Steps': dfVBA['Steps'].tolist(),
-        'Trinomial Tree Price Python': [x for x in range(len(dfVBA))],
+        'Trinomial Tree Price Python': [np.nan for x in range(len(dfVBA))],
         'Trinomial Tree Price VBA': dfVBA['Trinomial Tree Price'].tolist(),
 
-        'Trinomial Tree Time Python': [x for x in range(len(dfVBA))],
+        'Trinomial Tree Time Python': [np.nan for x in range(len(dfVBA))],
         'Trinomial Tree Time VBA': dfVBA['Trinomial Tree Time'].tolist(),
 
-        'Convergence Price Python - VBA': [x for x in range(len(dfVBA))],
-        'Convergence Time Python - VBA': [x for x in range(len(dfVBA))],
+        'Convergence Price Python - VBA': [np.nan for x in range(len(dfVBA))],
+        'Convergence Time Python - VBA': [np.nan for x in range(len(dfVBA))],
     }
 
     df = pd.DataFrame(data).set_index('Steps')
@@ -242,8 +245,8 @@ with tab7:
         'Greeks': ['Delta', 'Gamma', 'Vega','Theta','Rho'],
         'Black-Scholes Python': [BS_Delta_cal, BS_Gamma_cal, BS_Vega_cal,BS_Theta_cal,BS_Rho_cal],
         'Black-Scholes VBA': greekstab(Greeks_Argument,cheminVBA),
-        'Variation Empirique Python': ['Paris', 'Lyon', 'Marseille','a','b'],
-        'Variation Empirique VBA': ['Paris', 'Lyon', 'Marseille','a','b'],
+        'Variation Empirique Python': [np.nan for x in range(5)],
+        'Variation Empirique VBA': [np.nan for x in range(5)],
     }
 
     df = pd.DataFrame(data)

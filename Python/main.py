@@ -49,7 +49,7 @@ def plot_binomial_tree(arbre):
     tree = arbre
     
     fig, ax = plt.subplots(figsize=(8, 6))
-    n = arbre.nb_step
+    n = 3#arbre.nb_step
     # Tracer les arêtes et les noeuds
     for i in range(n):
         for j in range(i + 1):
@@ -70,11 +70,7 @@ def plot_binomial_tree(arbre):
     st.pyplot(fig)
 
 # Tracer l'arbre binomial
-
-OptionPrice = main()
-plot_binomial_tree(OptionPrice)
-
-print(main())        
+       
 """    
 if __name__ == '__main__' : 
     now = dt.datetime.now()
