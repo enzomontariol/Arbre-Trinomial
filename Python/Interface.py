@@ -8,9 +8,10 @@ from datetime import datetime, date, timedelta
 import numpy as np 
 import pandas as pd
 import matplotlib.pyplot as plt
+import time
 
 # import résultat du VBA
-from mainVBA import greekstab, VBAprice, VBAdata
+from mainVBA import VBAprice, VBAdata
 cheminVBA = r'C:\Users\lince\Downloads\Trinomial_VBA_FINAL_VERSION.xlsm'
 
 # import des fonctions Black Scholes
@@ -58,7 +59,24 @@ st.markdown("""
 st.title("Trinomial Tree")
 
 # Création de 6 onglets
-tab1, tab2, tab3, tab4, tab5, tab6, tab7= st.tabs(["Caractéristiques", "Plus d'options", "Graphique", "Comparaison avec Black-Scholes","Comparaison Python-VBA","📈 Chart","Greeks"])
+memo, tab1, tab2, tab3, tab4, tab5, tab6, tab7= st.tabs(["Memo","Caractéristiques", "Plus d'options", "Graphique", "Comparaison avec Black-Scholes","Comparaison Python-VBA","📈 Chart","Greeks"])
+
+###########################################################################
+################################ Mémo 1 ###################################
+########################################################################### 
+
+with memo:
+    st.subheader("Mémo")
+    st.write("expliquer si on a fait des trucs different en python et vba (pour la construction),  expliquer les resultats differents et en terme de temps")
+    
+    st.write("Section 1")
+    st.divider()
+    st.write("Section 2")
+    st.markdown("""
+    - **Facile à utiliser** : Aucun besoin de HTML, CSS ou JavaScript.
+    - **Interactive** : Parfait pour la visualisation de données et les applications de Machine Learning.
+    """)
+    st.info("Essayez d'ajouter vos propres widgets et contenu interactif.")
 
 ###########################################################################
 ###################### Onglet 1 : Inputs Utilisateur ######################
@@ -86,8 +104,7 @@ with tab1 :
     
     with col3:
         st.date_input("Entrez une date de pricing :", key ="PricingDate")
-        st.number_input("Entrez le nombre de pas de l'arbre :", format="%.0f", key ="NbStep")
-
+        st.number_input("Entrez le nombre de pas de l'arbre :",  min_value=1, value=10, step=1, key ="NbStep")
 
 ###########################################################################
 ############# Onglet 2 : Inputs additionnels Utilisateur ##################
@@ -113,10 +130,13 @@ with tab2 :
 Main_Argument = (st.session_state["StockPrice"], st.session_state["Volatilite"], 
                      st.session_state["TauxInteret"], st.session_state["Strike"],
                      st.session_state["ExDateDividende"], st.session_state["Dividende"],
-                     st.session_state["Maturite"],st.session_state["NbStep"],
+                     st.session_state["Maturite"],
                      st.session_state["PricingDate"],
-                     st.session_state["Optiontype"], st.session_state["Exercicetype"]) # st.session_state["Alpha"],)
-OptionPrice = main(*Main_Argument)
+                     st.session_state["Optiontype"], st.session_state["Exercicetype"],
+                    st.session_state["AlphaParameter"],st.session_state["YearBase"],
+                    st.session_state["Pruning"],st.session_state["NbStep"])
+
+OptionPricePython, TimePricePython = main(*Main_Argument)
 
 ###########################################################################
 ################## Onglet 3 : Arbre Trinomial Display #####################
@@ -134,61 +154,80 @@ with tab3 :
 
 BS_Argument = (st.session_state["Optiontype"], st.session_state["Exercicetype"],
                      st.session_state["StockPrice"], st.session_state["Strike"],
-                     st.session_state["TauxInteret"], (st.session_state["Maturite"] - st.session_state["PricingDate"]).days,
+                     st.session_state["TauxInteret"], st.session_state["Maturite"], 
+                     st.session_state["PricingDate"],
                      st.session_state["Volatilite"])
-BSPriceValue = BS_Pricer(*BS_Argument)
+BSPriceValue, BSTimeValue = BS_Pricer(*BS_Argument)
+
+Main_Argument = (st.session_state["StockPrice"], st.session_state["Volatilite"], 
+                     st.session_state["TauxInteret"], st.session_state["Strike"],
+                     st.session_state["ExDateDividende"], st.session_state["Dividende"],
+                     st.session_state["Maturite"], 
+                     st.session_state["PricingDate"],
+                     st.session_state["Optiontype"], st.session_state["Exercicetype"],
+                    st.session_state["AlphaParameter"],st.session_state["YearBase"],
+                    st.session_state["Pruning"]) #, NbStep)
 
 StepList = [5] + [x for x in range(10,101,10)] + [x for x in range(120,401,20)] + [x for x in range(450,551,50)]
-# Calculer les valeurs de la fonction pour chaque entier
-#PythonValues = [main(100, 0.02, 0.03, 100, date(2024,10,1),3,date(2025,10,1),x,date(2024,9,1),"Call", "Européen") for x in StepList]
-PythonValues = [np.nan for x in StepList]
-dfVBA, BS_VBA, BSVBATime = VBAdata(cheminVBA)
+PythonValues = [main(*Main_Argument,x) for x in StepList]
+OptionPricePythonList = [x[0] for x in PythonValues]
+TimePricePythonList = [x[1] for x in PythonValues]
 
-with tab4:
-    st.write("Avec la formule de Black-Scholes en python, le prix de l'option est ", BSPriceValue,
-             " et est calculé en ", np.nan, ' seconds.')
-    st.write("Avec la formule de Black-Scholes en VBA, le prix de l'option est ", BS_VBA,
-             " et est calculé en ", BSVBATime, ' seconds.')
+dfVBA = VBAdata(cheminVBA)
 
-    data = {
+ResultatGreeksVBA, TrinomialPriceVBA, TrinomialTimeVBA, BSPriceVBA, BSTimeVBA = VBAprice(cheminVBA)
+
+data = {
         'Steps': dfVBA['Steps'].tolist(),
-        'Tree Price Python': PythonValues,
+        'Tree Price Python': OptionPricePythonList,
         'Tree Price VBA': dfVBA['Trinomial Tree Price'].tolist(),
 
-        'Tree Time Python': [np.nan for x in range(len(dfVBA))],
+        'Tree Time Python': TimePricePythonList,
         'Tree Time VBA': dfVBA['Trinomial Tree Time'].tolist(),
 
-        'Convergence Price BS - Python': [np.nan for x in range(len(dfVBA))],
+        'Convergence Price BS - Python': [x - BSPriceValue for x in OptionPricePythonList],
         'Convergence Price BS - VBA': dfVBA['Convergence avec Black-Scholes'].tolist(),
 
-        'Convergence Time BS - Python': [np.nan for x in range(len(dfVBA))],
+        'Convergence Time BS - Python': [x - BSTimeValue for x in TimePricePythonList],
         'Convergence Time BS - VBA': dfVBA['Time Gap avec Black-Scholes'].tolist(),
     }
 
-    df = pd.DataFrame(data)
-    df.set_index('Steps', inplace=True)
-    st.dataframe(df)
+df = pd.DataFrame(data)
+df.set_index('Steps', inplace=True)
 
+with tab4:
+    st.write("Avec la formule de Black-Scholes en python, le prix de l'option est ", BSPriceValue,
+             " et est calculé en ", BSTimeValue, ' seconds.')
+    st.write("Avec la formule de Black-Scholes en VBA, le prix de l'option est ", BSPriceVBA,
+             " et est calculé en ", BSTimeVBA, ' seconds.')
+    
+    st.dataframe(df)
+    
 ###########################################################################
 #################### Onglet 5 : Python-VBA Comparaison ####################
 ###########################################################################  
 
-with tab5:
-
-    data = {
+data = {
         'Steps': dfVBA['Steps'].tolist(),
-        'Trinomial Tree Price Python': [np.nan for x in range(len(dfVBA))],
+        'Trinomial Tree Price Python': OptionPricePythonList,
         'Trinomial Tree Price VBA': dfVBA['Trinomial Tree Price'].tolist(),
 
-        'Trinomial Tree Time Python': [np.nan for x in range(len(dfVBA))],
+        'Trinomial Tree Time Python': TimePricePythonList,
         'Trinomial Tree Time VBA': dfVBA['Trinomial Tree Time'].tolist(),
 
-        'Convergence Price Python - VBA': [a - b for a, b in zip([np.nan for x in range(len(dfVBA))], dfVBA['Trinomial Tree Price'].tolist())] ,
-        'Convergence Time Python - VBA': [a - b for a, b in zip([np.nan for x in range(len(dfVBA))], dfVBA['Trinomial Tree Time'].tolist())],
+        'Convergence Price Python - VBA': [a - b for a, b in zip(OptionPricePythonList, dfVBA['Trinomial Tree Price'].tolist())] ,
+        'Convergence Time Python - VBA': [a - b for a, b in zip(TimePricePythonList, dfVBA['Trinomial Tree Time'].tolist())],
     }
 
-    df = pd.DataFrame(data)
-    df.set_index('Steps', inplace=True)
+df = pd.DataFrame(data)
+df.set_index('Steps', inplace=True)
+
+with tab5:
+    st.write("L'arbre Trinomial en python, le prix de l'option est ", OptionPricePython,
+             " et est calculé en ", TimePricePython, ' seconds.')
+    st.write("L'arbre Trinomial en VBA, le prix de l'option est ", TrinomialPriceVBA,
+             " et est calculé en ", TrinomialTimeVBA, ' seconds.')
+
     st.dataframe(df)
 
 
@@ -228,7 +267,7 @@ with tab6:
 
 Greeks_Argument = (st.session_state["Optiontype"], st.session_state["Exercicetype"],
                      st.session_state["StockPrice"], st.session_state["Strike"],
-                     st.session_state["TauxInteret"], (st.session_state["Maturite"] - st.session_state["PricingDate"]).days,
+                     st.session_state["TauxInteret"], st.session_state["Maturite"], st.session_state["PricingDate"],
                      st.session_state["Volatilite"], st.session_state["YearBase"])
 
 BS_Delta_cal = BS_Delta(*Greeks_Argument)
@@ -237,32 +276,46 @@ BS_Vega_cal = BS_Vega(*Greeks_Argument)
 BS_Theta_cal = BS_Theta(*Greeks_Argument)
 BS_Rho_cal = BS_Rho(*Greeks_Argument)
 
+data = {
+    'Greeks': ['Delta', 'Gamma', 'Vega','Theta','Rho'],
+    'Black-Scholes Python': [BS_Delta_cal, BS_Gamma_cal, BS_Vega_cal,BS_Theta_cal,BS_Rho_cal],
+    'Black-Scholes VBA': ResultatGreeksVBA,
+    'Variation Empirique Python': [np.nan for x in range(5)],
+    'Variation Empirique VBA': [np.nan for x in range(5)],
+}
+
+df = pd.DataFrame(data)
+df.set_index('Greeks', inplace=True)
+
 with tab7:
-
-    # Exemple de DataFrame
-    # recup les données d'excel
-    data = {
-        'Greeks': ['Delta', 'Gamma', 'Vega','Theta','Rho'],
-        'Black-Scholes Python': [BS_Delta_cal, BS_Gamma_cal, BS_Vega_cal,BS_Theta_cal,BS_Rho_cal],
-        'Black-Scholes VBA': greekstab(Greeks_Argument,cheminVBA),
-        'Variation Empirique Python': [np.nan for x in range(5)],
-        'Variation Empirique VBA': [np.nan for x in range(5)],
-    }
-
-    df = pd.DataFrame(data)
-    df.set_index('Greeks', inplace=True)
     st.dataframe(df)
 
 
 if st.button("Lancer le Code"):
     now = dt.datetime.now()
-    result = main(*Main_Argument)
-    print(f"Résultat au bout de : {dt.datetime.now() - now}")
-    print (f"Le prix de l'option est : {result}")
-    st.write("code lanceeeeeeeeeer", result, st.session_state["ExDateDividende"], type(st.session_state["ExDateDividende"]))
+    result = OptionPricePython
+    st.write(f"Résultat au bout de : {dt.datetime.now() - now}")
+    st.write (f"Le prix de l'option est : {result}")
+    
     st.write(st.session_state)
-    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    
 #######################################################################
 #######################################################################
 #######################################################################
 #######################################################################
+
+exit()
+"""MainVBAArgument = (StockPrice = st.session_state["StockPrice"],
+                Volatilite = st.session_state["Volatilite"],
+                TauxInteret = st.session_state["TauxInteret"], 
+                Strike = st.session_state["Strike"],
+                ExDateDividende = st.session_state["ExDateDividende"], 
+                Dividende = st.session_state["Dividende"], 
+                Maturite = st.session_state["Maturite"], 
+                NbStep = st.session_state["NbStep"],
+                PricingDate = st.session_state["PricingDate"], 
+                Optiontype = st.session_state["Optiontype"], 
+                Exercicetype = st.session_state["Exercicetype"], 
+                Alpha = st.session_state["AlphaParameter"], 
+                BaseYear = st.session_state["YearBase"],
+                Elagage = st.session_state["Pruning"])"""

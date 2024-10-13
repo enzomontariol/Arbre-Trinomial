@@ -1,7 +1,7 @@
 #%% Imports
-
+import time
 import datetime as dt
-from datetime import date
+from datetime import date, datetime
 import matplotlib.pyplot as plt
 import numpy as np
 from Classes.module_marche import DonneeMarche
@@ -10,12 +10,13 @@ from Classes.module_arbre import Arbre
 from Classes.module_enums import MethodeConstructionArbre
 
 
-"""def main(StockPrice: float, Volatilite: float, TauxInteret: float, Strike: float,
-         ExDateDividende: date, Dividende: float, Maturite: date, NbStep: float, 
-         PricingDate: date, Optiontype: str, Exercicetype: str,
+def main(StockPrice: float, Volatilite: float, TauxInteret: float, Strike: float,
+         ExDateDividende: date, Dividende: float, Maturite: date,  
+         PricingDate: date = datetime.today().date(), 
+         Optiontype: str = 'Call', Exercicetype: str = 'Européen', 
+         Alpha: int = 3, BaseYear: float = 365, Elagage: str = "Oui",
+         NbStep: int = 10,
          methode_construction : MethodeConstructionArbre = MethodeConstructionArbre.vanille) -> float : 
-"""
-def main(methode_construction : MethodeConstructionArbre = MethodeConstructionArbre.vanille) -> float : 
     today = dt.date.today()
     today_1y = dt.date(today.year+1, today.month, today.day)
 
@@ -28,21 +29,23 @@ def main(methode_construction : MethodeConstructionArbre = MethodeConstructionAr
     strike = 100 #Strike
     expiry = today_1y #Maturite
 
-    nb_pas = 400 #NbStep
+    nb_pas = NbStep
 
-    #pricing_date = PricingDate
-    #type_option = Optiontype
-    #type_exercise = Exercicetype
+    pricing_date = PricingDate
+    type_option = Optiontype
+    type_exercise = Exercicetype
 
     donnée = DonneeMarche(today, spot, vol, discount_rate, risk_free, dividende_ex_date=dividende_ex_date, dividende_montant=dividende_montant)
     option = Option(maturite = expiry, prix_exercice = strike, call = True, date_pricing = today)
 
     arbre = Arbre(nb_pas, donnée, option)
     
+    start_time = time.time()
     arbre.pricer_arbre()  
+    execution_time = time.time() - start_time
 
     print("Ok: Arbre")
-    return arbre.prix_option
+    return arbre.prix_option, execution_time
 
 # marche pas, faut rentrer l'arbre en argument
 def plot_binomial_tree(arbre):
