@@ -1,7 +1,7 @@
 from typing import Union
 import datetime as dt
 
-from module_arbre import Arbre
+from Python.Classes.module_arbre import Arbre
 from module_enums import DifferenceFinieType          
 
 class GrecquesEmpiriques : 
