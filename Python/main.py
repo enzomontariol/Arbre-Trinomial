@@ -12,31 +12,45 @@ from Classes.module_enums import MethodeConstructionArbre
 
 def main(StockPrice: float, Volatilite: float, TauxInteret: float, Strike: float,
          ExDateDividende: date, Dividende: float, Maturite: date,  
-         PricingDate: date = datetime.today().date(), 
-         Optiontype: str = 'Call', Exercicetype: str = 'Européen', 
-         Alpha: int = 3, BaseYear: float = 365, Elagage: str = "Oui",
-         NbStep: int = 10,
+         PricingDate: date, 
+         Optiontype: str, Exercicetype: str, 
+         Alpha: int, BaseYear: float, Elagage: str,
+         NbStep: int,
          methode_construction : MethodeConstructionArbre = MethodeConstructionArbre.vanille) -> float : 
-    today = dt.date.today()
-    today_1y = dt.date(today.year+1, today.month, today.day)
+    
+    spot = StockPrice
+    vol = Volatilite
+    discount_rate = risk_free = TauxInteret
+    dividende_ex_date = ExDateDividende
+    dividende_montant = Dividende
 
-    spot = 100 #StockPrice
-    vol = 0.2 #Volatilite
-    discount_rate = risk_free = 0.04 #TauxInteret
-    dividende_ex_date = dt.date(today.year+1, today.month-6, today.day) #ExDateDividende
-    dividende_montant = 4 #Dividende
-
-    strike = 100 #Strike
-    expiry = today_1y #Maturite
+    strike = Strike
+    maturite = Maturite
 
     nb_pas = NbStep
 
     pricing_date = PricingDate
     type_option = Optiontype
+
+    if type_option == 'Call':
+        type_option = True
+    else:
+        type_option = False
+
+    if Exercicetype == 'Americain':
+        Exercicetype = True
+    else:
+        Exercicetype = False
+
     type_exercise = Exercicetype
 
-    donnée = DonneeMarche(today, spot, vol, discount_rate, risk_free, dividende_ex_date=dividende_ex_date, dividende_montant=dividende_montant)
-    option = Option(maturite = expiry, prix_exercice = strike, call = True, date_pricing = today)
+    donnée = DonneeMarche(date_debut = pricing_date, prix_spot = spot, 
+                          volatilite = vol,
+                          taux_interet = risk_free, taux_actualisation = discount_rate,
+                          dividende_ex_date=dividende_ex_date, dividende_montant=dividende_montant)
+    
+    option = Option(maturite = maturite, prix_exercice = strike, 
+                    call = type_option, americaine = type_exercise, date_pricing = pricing_date)
 
     arbre = Arbre(nb_pas, donnée, option)
     
@@ -45,7 +59,48 @@ def main(StockPrice: float, Volatilite: float, TauxInteret: float, Strike: float
     execution_time = time.time() - start_time
 
     print("Ok: Arbre")
-    return arbre.prix_option, execution_time
+    return arbre, arbre.prix_option, execution_time
+
+
+spot = 100 
+vol = 0.02
+discount_rate = risk_free = 0.02
+dividende_ex_date = date(2024, 8, 10) 
+dividende_montant = 4 
+typee = 'Call'
+
+strike = 101 #Strike
+expiry = date(2024,1,23)
+USEUU = 'Européen'
+
+datestart = date(2024,1,13)
+
+
+a,b,c = main(StockPrice = spot, Volatilite = vol, TauxInteret = risk_free, Strike = strike,
+          ExDateDividende = dividende_ex_date, Dividende = dividende_montant, Maturite = expiry, PricingDate = datestart, 
+          Optiontype = typee, Exercicetype = USEUU, Alpha = 3, BaseYear= 365, Elagage= 'Oui',NbStep =  300)
+
+print(b,c)
+
+a,bpos,c = main(StockPrice = spot*(1+0.01), Volatilite = vol, TauxInteret = risk_free, Strike = strike,
+          ExDateDividende = dividende_ex_date, Dividende = dividende_montant, Maturite = expiry, PricingDate = datestart, 
+          Optiontype = typee, Exercicetype = USEUU, Alpha = 3, BaseYear= 365, Elagage= 'Oui',NbStep =  300)
+
+
+a,bneg,c = main(StockPrice = spot*(1-0.01), Volatilite = vol, TauxInteret = risk_free, Strike = strike,
+          ExDateDividende = dividende_ex_date, Dividende = dividende_montant, Maturite = expiry, PricingDate = datestart, 
+          Optiontype = typee, Exercicetype = USEUU, Alpha = 3, BaseYear= 365, Elagage= 'Oui',NbStep =  300)
+
+print(bpos,bneg)
+
+
+from Classes.module_grecques_empiriques import GrecquesEmpiriques
+
+GreeksResult = GrecquesEmpiriques(a,var_s=0.01)
+print(GreeksResult.approxime_delta())
+print(GreeksResult.approxime_vega())
+
+
 
 # marche pas, faut rentrer l'arbre en argument
 def plot_binomial_tree(arbre):

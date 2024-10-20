@@ -8,15 +8,20 @@ from datetime import datetime, date, timedelta
 import numpy as np 
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
 import time
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # import résultat du VBA
-from mainVBA import VBAprice, VBAdata
+from mainVBA import VBAprice, VBAdata, VBAEmpiriqueGreeks
 cheminVBA = r'C:\Users\lince\Downloads\Trinomial_VBA_FINAL_VERSION.xlsm'
 
 # import des fonctions Black Scholes
 from Classes.module_black_scholes import BS_Pricer, BS_Delta, BS_Gamma, BS_Vega, BS_Theta, BS_Rho
 
+from Classes.module_grecques_empiriques import GrecquesEmpiriques
 # import fonction principale
 from main import main
 
@@ -58,8 +63,20 @@ st.markdown("""
 # Titre de l'application
 st.title("Trinomial Tree")
 
+# Bloque le run du script entier à chaque intéraction de l'utilisateur
+if 'run_code' not in st.session_state:
+    st.session_state.run_code = False
+
+if 'run_analyse' not in st.session_state:
+    st.session_state.run_analyse = False
+
+if 'run_greeks' not in st.session_state:
+    st.session_state.run_greeks = False
+
 # Création de 6 onglets
-memo, tab1, tab2, tab3, tab4, tab5, tab6, tab7= st.tabs(["Memo","Caractéristiques", "Plus d'options", "Graphique", "Comparaison avec Black-Scholes","Comparaison Python-VBA","📈 Chart","Greeks"])
+#memo, tab1, tab2, tab3, tab4, tab5, tab6, tab7= st.tabs(["Memo","Caractéristiques", "Plus d'options", "Graphique", "Comparaison avec Black-Scholes","Comparaison Python-VBA","📈 Chart","Greeks"])
+
+memo, tab1, tab2, tab3, tab4, tab5, tab7= st.tabs(["Memo","Caractéristiques", "Plus d'options", "Graphique", "Comparaison avec Black-Scholes","Comparaison Python-VBA","Greeks"])
 
 ###########################################################################
 ################################ Mémo 1 ###################################
@@ -106,6 +123,9 @@ with tab1 :
         st.date_input("Entrez une date de pricing :", key ="PricingDate")
         st.number_input("Entrez le nombre de pas de l'arbre :",  min_value=1, value=10, step=1, key ="NbStep")
 
+    if st.button("Lancer le pricing", key = "run1"):
+        st.session_state.run_code = True  
+
 ###########################################################################
 ############# Onglet 2 : Inputs additionnels Utilisateur ##################
 ###########################################################################  
@@ -122,6 +142,9 @@ with tab2 :
     with col2:
         Options = ['Oui','Non']
         st.selectbox("Elagage de l'arbre :", Options, key ="Pruning")
+    
+    if st.button("Lancer le pricing", key = "run2"):
+        st.session_state.run_code = True  
 
 ###########################################################################
 ################## Prix option via Arbre Trinomial ########################
@@ -136,7 +159,22 @@ Main_Argument = (st.session_state["StockPrice"], st.session_state["Volatilite"],
                     st.session_state["AlphaParameter"],st.session_state["YearBase"],
                     st.session_state["Pruning"],st.session_state["NbStep"])
 
-OptionPricePython, TimePricePython = main(*Main_Argument)
+# price si l'utilisateur à cliquer sur le bouton
+if st.session_state.run_code:
+    now = dt.datetime.now()
+    Arbre, OptionPricePython, TimePricePython = main(*Main_Argument)
+    # GreeksResult = GrecquesEmpiriques(Arbre)
+    # GreeksResultList = [GreeksResult.approxime_delta(),GreeksResult.approxime_gamma(),GreeksResult.approxime_vega(),
+    #                     GreeksResult.approxime_theta(),GreeksResult.approxime_rho()]
+    result = OptionPricePython
+    st.write(f"Résultat au bout de : {dt.datetime.now() - now}")
+    st.write (f"Le prix de l'option est : {result}")
+    st.write(st.session_state)
+    st.session_state.run_code = False
+    st.session_state.run_analyse = False
+else:
+    OptionPricePython, TimePricePython = np.nan, np.nan
+
 
 ###########################################################################
 ################## Onglet 3 : Arbre Trinomial Display #####################
@@ -144,8 +182,8 @@ OptionPricePython, TimePricePython = main(*Main_Argument)
 
 with tab3 : 
     st.subheader("Arbre Trinomiale")
-
-# Tracer l'arbre binomial avec les prix sur l'axe des ordonnées et les étapes sur l'axe des abscisses
+    #Arbre.visualize_tree()
+    # Tracer l'arbre binomial avec les prix sur l'axe des ordonnées et les étapes sur l'axe des abscisses
 
 
 ###########################################################################
@@ -157,39 +195,40 @@ BS_Argument = (st.session_state["Optiontype"], st.session_state["Exercicetype"],
                      st.session_state["TauxInteret"], st.session_state["Maturite"], 
                      st.session_state["PricingDate"],
                      st.session_state["Volatilite"])
-BSPriceValue, BSTimeValue = BS_Pricer(*BS_Argument)
+BSPriceValue, BSTimeValue = BS_Pricer(*BS_Argument) #### pb: prix faux
 
-Main_Argument = (st.session_state["StockPrice"], st.session_state["Volatilite"], 
-                     st.session_state["TauxInteret"], st.session_state["Strike"],
+# prend les mêmes arguments que l'analyse en VBA
+Main_Argument_Analysis = (100, 0.02, 0.02, 101,
                      st.session_state["ExDateDividende"], st.session_state["Dividende"],
-                     st.session_state["Maturite"], 
-                     st.session_state["PricingDate"],
-                     st.session_state["Optiontype"], st.session_state["Exercicetype"],
-                    st.session_state["AlphaParameter"],st.session_state["YearBase"],
-                    st.session_state["Pruning"]) #, NbStep)
+                     date(2024,10,23), date(2024,1,13),
+                     'Call', 'Européen', 3, 365,'Oui')
 
 StepList = [5] + [x for x in range(10,101,10)] + [x for x in range(120,401,20)] + [x for x in range(450,551,50)]
-PythonValues = [main(*Main_Argument,x) for x in StepList]
-OptionPricePythonList = [x[0] for x in PythonValues]
-TimePricePythonList = [x[1] for x in PythonValues]
+PythonValues = [main(*Main_Argument_Analysis,x) for x in StepList]
+ 
+# lance l'analyse que si l'utilisateur clique sur le bouton
+# if st.session_state.run_analyse:
+#     PythonValues = [main(*Main_Argument_Analysis,x) for x in StepList]
+#     st.session_state.run_analyse = False
+# else: 
+#     PythonValues = [[np.nan,np.nan,np.nan] for x in StepList]
 
-dfVBA = VBAdata(cheminVBA)
+# Analyse en Python
+OptionPricePythonList = [x[1] for x in PythonValues]
+TimePricePythonList = [x[2] for x in PythonValues] #### pb: à diviser par 100?
 
+# Récupération des valeurs du fichier excel
+BSTab, StepTab, StrikeTab = VBAdata(cheminVBA)
 ResultatGreeksVBA, TrinomialPriceVBA, TrinomialTimeVBA, BSPriceVBA, BSTimeVBA = VBAprice(cheminVBA)
 
 data = {
-        'Steps': dfVBA['Steps'].tolist(),
+        'Steps': StepTab['Steps'].tolist(),
         'Tree Price Python': OptionPricePythonList,
-        'Tree Price VBA': dfVBA['Trinomial Tree Price'].tolist(),
+        'Tree Price VBA': StepTab['Trinomial Tree Price'].tolist(),
 
-        'Tree Time Python': TimePricePythonList,
-        'Tree Time VBA': dfVBA['Trinomial Tree Time'].tolist(),
-
-        'Convergence Price BS - Python': [x - BSPriceValue for x in OptionPricePythonList],
-        'Convergence Price BS - VBA': dfVBA['Convergence avec Black-Scholes'].tolist(),
-
-        'Convergence Time BS - Python': [x - BSTimeValue for x in TimePricePythonList],
-        'Convergence Time BS - VBA': dfVBA['Time Gap avec Black-Scholes'].tolist(),
+        # graph
+        'Convergence Price BS - Python': [(OptionPricePythonList[i] - BSPriceValue)*StepList[i] for i in range(len(OptionPricePythonList))],
+        'Convergence Price BS - VBA': StepTab['Convergence avec Black-Scholes'].tolist(),
     }
 
 df = pd.DataFrame(data)
@@ -201,26 +240,83 @@ with tab4:
     st.write("Avec la formule de Black-Scholes en VBA, le prix de l'option est ", BSPriceVBA,
              " et est calculé en ", BSTimeVBA, ' seconds.')
     
-    st.dataframe(df)
+    col1, col2 = st.columns(2) 
+
+    with col1:
+        st.dataframe(df)
+
+    with col2:
+        # Création du graphique avec deux axes y
+        fig = go.Figure()
+        # Tracer la première colonne (Colonne_1) sur le premier axe y
+        fig.add_trace(go.Scatter(
+            x=df.index,
+            y=df['Convergence Price BS - VBA'],
+            name='Convergence Price BS - VBA',
+            mode='lines',
+            line=dict(color='blue')
+        ))
+
+        # Tracer la deuxième colonne (Colonne_2) sur le second axe y
+        fig.add_trace(go.Scatter(
+            x=df.index,
+            y=df['Convergence Price BS - Python'],
+            name='Convergence Price BS - Python',
+            mode='lines',
+            line=dict(color='red'),
+            yaxis='y2'
+        ))
+
+        # Mise en forme des axes
+        fig.update_layout(
+            title={
+                'text': 'Graphique avec deux axes y',
+                'x': 0.5,  # Position horizontale du titre (0.5 = centré)
+                'xanchor': 'center'  # Ancrer le texte au centre
+            },
+            xaxis_title='Indice du DataFrame',
+            yaxis_title='Colonne 1',
+            
+            # Configuration du second axe y
+            yaxis2=dict(
+                title='Colonne 2',
+                overlaying='y',  # Superposer les deux axes
+                side='right'  # Deuxième axe à droite
+            ),
+
+            # Positionner la légende en dessous
+            legend=dict(
+                orientation="h",  # Légende horizontale
+                yanchor="top", 
+                y=-0.2,
+                xanchor="center",
+                x=0.5
+                ),
+            
+            # Ajuster la taille du graphique
+            width=610,  # Largeur en pixels
+            height=400  # Hauteur en pixels
+        )
+
+        # Affichage du graphique dans Streamlit
+        st.plotly_chart(fig)
+
+    if st.button("Lancer l'analyse"):
+        st.session_state.run_analyse = True  # Met à jour l'état quand on clique sur le bouton
+
     
 ###########################################################################
 #################### Onglet 5 : Python-VBA Comparaison ####################
 ###########################################################################  
 
 data = {
-        'Steps': dfVBA['Steps'].tolist(),
-        'Trinomial Tree Price Python': OptionPricePythonList,
-        'Trinomial Tree Price VBA': dfVBA['Trinomial Tree Price'].tolist(),
-
+        'Steps': StepTab['Steps'].tolist(),
         'Trinomial Tree Time Python': TimePricePythonList,
-        'Trinomial Tree Time VBA': dfVBA['Trinomial Tree Time'].tolist(),
-
-        'Convergence Price Python - VBA': [a - b for a, b in zip(OptionPricePythonList, dfVBA['Trinomial Tree Price'].tolist())] ,
-        'Convergence Time Python - VBA': [a - b for a, b in zip(TimePricePythonList, dfVBA['Trinomial Tree Time'].tolist())],
+        'Trinomial Tree Time VBA': StepTab['Trinomial Tree Time'].tolist(),
+        'Convergence Time Python - VBA': [a - b for a, b in zip(TimePricePythonList, StepTab['Trinomial Tree Time'].tolist())],
     }
 
-df = pd.DataFrame(data)
-df.set_index('Steps', inplace=True)
+df = pd.DataFrame(data).set_index('Steps')
 
 with tab5:
     st.write("L'arbre Trinomial en python, le prix de l'option est ", OptionPricePython,
@@ -228,37 +324,70 @@ with tab5:
     st.write("L'arbre Trinomial en VBA, le prix de l'option est ", TrinomialPriceVBA,
              " et est calculé en ", TrinomialTimeVBA, ' seconds.')
 
-    st.dataframe(df)
+    col1, col2 = st.columns(2) 
 
+    with col1:
+        st.dataframe(df, width=800)
 
-###########################################################################
-#################### Onglet 6 : Graphique Performance #####################
-###########################################################################  
+    with col2:
+        # Création du graphique avec deux axes y
+        fig = go.Figure()
 
-with tab6:
-    # Exemple de données
-    data = {
-        'Steps': dfVBA['Steps'].tolist(),
-        'Trinomial Tree Price Python': [np.nan for x in range(len(dfVBA))],
-        'Trinomial Tree Price VBA': dfVBA['Trinomial Tree Price'].tolist(),
+        # Tracer la première colonne (Colonne_1) sur le premier axe y
+        fig.add_trace(go.Scatter(
+            x=df.index,
+            y=df['Trinomial Tree Time Python'],
+            name='Trinomial Tree Time Python',
+            mode='lines',
+            line=dict(color='blue')
+        ))
 
-        'Trinomial Tree Time Python': [np.nan for x in range(len(dfVBA))],
-        'Trinomial Tree Time VBA': dfVBA['Trinomial Tree Time'].tolist(),
+        # Tracer la deuxième colonne (Colonne_2) sur le second axe y
+        fig.add_trace(go.Scatter(
+            x=df.index,
+            y=df['Trinomial Tree Time VBA'],
+            name='Trinomial Tree Time VBA',
+            mode='lines',
+            line=dict(color='red'),
+        ))
 
-        'Convergence Price Python - VBA': [np.nan for x in range(len(dfVBA))],
-        'Convergence Time Python - VBA': [np.nan for x in range(len(dfVBA))],
-    }
+        # Mise en forme des axes
+        fig.update_layout(
+            title={
+                'text': 'Graphique avec deux axes y',
+                'x': 0.5,  # Position horizontale du titre (0.5 = centré)
+                'xanchor': 'center'  # Ancrer le texte au centre
+            },
+            xaxis_title='Indice du DataFrame',
+            yaxis_title='Colonne 1',
+            
+            # Configuration du second axe y
+            yaxis2=dict(
+                title='Colonne 2',
+                overlaying='y',  # Superposer les deux axes
+                side='right'  # Deuxième axe à droite
+            ),
 
-    df = pd.DataFrame(data).set_index('Steps')
+            # Positionner la légende en dessous
+            legend=dict(
+                orientation="h",  # Légende horizontale
+                yanchor="top", 
+                y=-0.2,
+                xanchor="center",
+                x=0.5
+                ),
+            
+            # Ajuster la taille du graphique
+            width=610,  # Largeur en pixels
+            height=400  # Hauteur en pixels
+        )
 
-    # Sélection des courbes à afficher
-    selected_curves = st.multiselect("Choisissez les courbes :", options=df.columns, default=df.columns.tolist())
+        # Affichage du graphique dans Streamlit
+        st.plotly_chart(fig)
+    
+    if st.button("Lancer la comparaison"):
+        st.session_state.run_vba_python = True 
 
-    # Affichage du graphique
-    if selected_curves:  # Vérifie si des courbes sont sélectionnées
-        st.line_chart(df[selected_curves])
-    else:
-        st.write("Aucune courbe sélectionnée.")
 
 
 ###########################################################################
@@ -276,12 +405,19 @@ BS_Vega_cal = BS_Vega(*Greeks_Argument)
 BS_Theta_cal = BS_Theta(*Greeks_Argument)
 BS_Rho_cal = BS_Rho(*Greeks_Argument)
 
+GreeksEmpiriqueVBA = VBAEmpiriqueGreeks(cheminVBA)
+
+# if not st.session_state.run_code:
+GreeksResultList = [np.nan for x in range(5)]
+#     st.session_state.run_code = True
+
+
 data = {
     'Greeks': ['Delta', 'Gamma', 'Vega','Theta','Rho'],
     'Black-Scholes Python': [BS_Delta_cal, BS_Gamma_cal, BS_Vega_cal,BS_Theta_cal,BS_Rho_cal],
     'Black-Scholes VBA': ResultatGreeksVBA,
-    'Variation Empirique Python': [np.nan for x in range(5)],
-    'Variation Empirique VBA': [np.nan for x in range(5)],
+    'Variation Empirique Python': GreeksResultList,
+    'Variation Empirique VBA': GreeksEmpiriqueVBA,
 }
 
 df = pd.DataFrame(data)
@@ -290,14 +426,8 @@ df.set_index('Greeks', inplace=True)
 with tab7:
     st.dataframe(df)
 
-
-if st.button("Lancer le Code"):
-    now = dt.datetime.now()
-    result = OptionPricePython
-    st.write(f"Résultat au bout de : {dt.datetime.now() - now}")
-    st.write (f"Le prix de l'option est : {result}")
-    
-    st.write(st.session_state)
+    if st.button("Actualiser le tableau"):
+        st.session_state.run_greeks = True  
     
 #######################################################################
 #######################################################################
@@ -319,3 +449,34 @@ exit()
                 Alpha = st.session_state["AlphaParameter"], 
                 BaseYear = st.session_state["YearBase"],
                 Elagage = st.session_state["Pruning"])"""
+
+
+###########################################################################
+#################### Onglet 6 : Graphique Performance #####################
+###########################################################################  
+
+with tab6:
+    # Exemple de données
+    data = {
+        'Steps': StepTab['Steps'].tolist(),
+        'Trinomial Tree Price Python': [np.nan for x in range(len(StepTab))],
+        'Trinomial Tree Price VBA': StepTab['Trinomial Tree Price'].tolist(),
+
+        'Trinomial Tree Time Python': [np.nan for x in range(len(StepTab))],
+        'Trinomial Tree Time VBA': StepTab['Trinomial Tree Time'].tolist(),
+
+        'Convergence Price Python - VBA': [np.nan for x in range(len(StepTab))],
+        'Convergence Time Python - VBA': [np.nan for x in range(len(StepTab))],
+    }
+
+    df = pd.DataFrame(data).set_index('Steps')
+
+    # Sélection des courbes à afficher
+    selected_curves = st.multiselect("Choisissez les courbes :", options=df.columns, default=df.columns.tolist())
+
+    # Affichage du graphique
+    if selected_curves:  # Vérifie si des courbes sont sélectionnées
+        st.line_chart(df[selected_curves])
+    else:
+        st.write("Aucune courbe sélectionnée.")
+

@@ -1,18 +1,18 @@
 from typing import Union
 import datetime as dt
 
-from Python.Classes.module_arbre import Arbre
-from module_enums import DifferenceFinieType          
+from Classes.module_arbre import Arbre
+#from Classes.module_enums import DifferenceFinieType          
 
 class GrecquesEmpiriques : 
-    def __init__(self, arbre : Arbre, var_s : float = 0.01, var_v : float = 0.01, var_t : int = 1, var_r : float = 0.01, difference_finie_type : DifferenceFinieType = DifferenceFinieType.centree):
+    def __init__(self, arbre : Arbre, var_s : float = 0.01, var_v : float = 0.01, var_t : int = 1, var_r : float = 0.01):#, difference_finie_type : DifferenceFinieType = DifferenceFinieType.centree):
         
         self.arbre = arbre
         self.var_s = var_s
         self.var_v = var_v
         self.var_t = var_t
         self.var_r = var_r
-        self.difference_finie_type = difference_finie_type
+        #self.difference_finie_type = difference_finie_type
         
         if not hasattr(self.arbre, "prix_option") : 
             self.arbre.pricer_arbre()
@@ -44,7 +44,7 @@ class GrecquesEmpiriques :
         nouvel_arbre_1 = self.__pricer_arbre_choc("prix_spot", ds)
         nouvel_arbre_2 = self.__pricer_arbre_choc("prix_spot", neg_ds)
         delta = (nouvel_arbre_1.prix_option - nouvel_arbre_2.prix_option) / 2 * self.var_s
-    
+
         #on stocke dans la classe la valeur de l'arbre choqué pour ne pas à avoir à recalculer si on calcule une dérivée de second ordre
         if not hasattr(self, "prix_nouvel_arbre_ds_1") :             
             self.prix_nouvel_arbre_ds_1 = nouvel_arbre_1.prix_option
