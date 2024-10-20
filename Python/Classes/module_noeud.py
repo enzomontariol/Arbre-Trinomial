@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from module_arbre import Arbre
+from Classes.module_arbre import Arbre
 
 #%% Constantes
 
@@ -21,10 +21,8 @@ class Noeud :
 
         Args:
             prix_sj (float): le prix du sous-jacent de ce noeud
-            donnee_marche (DonneeMarche): Classe utilisée pour représenter les données de marché.
-            option (Option): Classe utilisée pour représenter une option et ses paramètres.
-            nb_pas (int): le nombre de pas dans notre modèle
-            position_arbre (int): _descripla position de notre noeud au sein de l'arbre (uniquement sur un axe horizontal)tion_
+            arbre (Arbre): l'arbre auquel est rattaché notre noeud
+            position_arbre (int): decrit la position du noeud dans l'arbre sur l'axe horizontal
         """
         self.prix_sj = prix_sj
         self.arbre = arbre
@@ -44,7 +42,11 @@ class Noeud :
         self.valeur_intrinseque = None
         
     def _calcul_forward(self) -> float : 
-        #permet de calculer le prix forward du prochain noeud
+        """Permet de calculer la valeur du prix forward sur dt suivant
+        
+        Returns:
+            float : prix forward
+        """
         
         if self.position_arbre < self.arbre.position_div and self.position_arbre + 1 > self.arbre.position_div : 
             div = self.arbre.donnee_marche.dividende_montant
@@ -54,9 +56,17 @@ class Noeud :
         return self.prix_sj * self.arbre.facteur_capitalisation - div
     
     def __calcul_variance(self) -> float : 
+        """Nous permet de calculer la variance
+
+        Returns:
+            float: variance
+        """
+        
         return (self.prix_sj ** 2) * np.exp(2 * self.arbre.donnee_marche.taux_interet * self.arbre.delta_t) * (np.exp((self.arbre.donnee_marche.volatilite ** 2) * self.arbre.delta_t) - 1)
     
-    def __calcul_proba(self) -> None : 
+    def __calcul_proba(self) -> None :
+        """Nous permet de calculer les probabilités haut, centre, bas.
+        """
         
         fw = self._calcul_forward()
        
@@ -80,6 +90,14 @@ class Noeud :
             self.p_mid = p_mid      
             
     def __test_noeud_proche(self, forward : float) -> bool : 
+        """Cette fonction nous permet de tester si le noeud est compris entre un prix d'un noeud haut ou d'un noeud bas.
+
+        Args:
+            forward (float): le prix forward de notre noeud que l'on aura calculé préalablement.
+
+        Returns:
+            bool: passage du test ou non 
+        """
         condition_1 = (self.prix_sj * (1 + 1/self.arbre.alpha) / 2 <= forward)
         condition_2 = (forward <= self.prix_sj * (1 + self.arbre.alpha) / 2)
         if condition_1 and condition_2: 
@@ -88,18 +106,37 @@ class Noeud :
             return False
         
     def bas_suivant(self) -> Noeud : 
+        """Nous permet de créer le noeud bas suivant si il n'existe pas déjà.
+
+        Returns:
+            Noeud: le noeud bas
+        """
         if self.bas == None : 
             self.bas = Noeud(self.prix_sj / self.arbre.alpha, self.arbre, self.position_arbre)
             self.bas.haut = self
         return self.bas
             
     def haut_suivant(self) -> Noeud : 
+        """Nous permet de créer le noeud haut suivant si il n'existe pas déjà.
+
+        Returns:
+            Noeud: le noeud haut
+        """
         if self.haut == None : 
             self.haut = Noeud(self.prix_sj * self.arbre.alpha, self.arbre, self.position_arbre)
             self.haut.bas = self   
         return self.haut  
                 
     def trouve_centre(self, prochain_noeud : Noeud) -> Noeud : 
+        """Fonction nous permettant de retrouver le prochain noeud centre.
+
+        Args:
+            prochain_noeud (Noeud): noeud candidat
+
+        Returns:
+            Noeud: le centre de notre noeud de référence.
+        """
+        
         fw = self._calcul_forward()
         
         if prochain_noeud.__test_noeud_proche(fw) : 
@@ -116,6 +153,11 @@ class Noeud :
         return prochain_noeud
 
     def creer_prochain_block(self, prochain_noeud : Noeud) -> None :
+        """Nous permet de créer un bloc de noeud complet.
+
+        Args:
+            prochain_noeud (Noeud): _description_
+        """
 
         self.futur_centre = self.trouve_centre(prochain_noeud=prochain_noeud)
         self.__calcul_proba()
