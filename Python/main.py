@@ -63,24 +63,25 @@ def main(StockPrice: float, Volatilite: float, TauxInteret: float, Strike: float
 
 
 spot = 100 
-vol = 0.02
-discount_rate = risk_free = 0.02
-dividende_ex_date = date(2024, 8, 10) 
-dividende_montant = 4 
+vol = 0.21
+discount_rate = risk_free = 0.03
+dividende_ex_date = date(2024, 6,15) 
+dividende_montant = 3
+
 typee = 'Call'
 
 strike = 101 #Strike
-expiry = date(2024,1,23)
+expiry = date(2024, 12, 26) 
 USEUU = 'Européen'
 
-datestart = date(2024,1,13)
-
+datestart = date(2024, 3, 1)
 
 a,b,c = main(StockPrice = spot, Volatilite = vol, TauxInteret = risk_free, Strike = strike,
           ExDateDividende = dividende_ex_date, Dividende = dividende_montant, Maturite = expiry, PricingDate = datestart, 
           Optiontype = typee, Exercicetype = USEUU, Alpha = 3, BaseYear= 365, Elagage= 'Oui',NbStep =  300)
 
 print(b,c)
+exit()
 
 a,bpos,c = main(StockPrice = spot*(1+0.01), Volatilite = vol, TauxInteret = risk_free, Strike = strike,
           ExDateDividende = dividende_ex_date, Dividende = dividende_montant, Maturite = expiry, PricingDate = datestart, 
@@ -152,3 +153,5 @@ Greeks_Argument = (Optiontype, Exercicetype,
                      TauxInteret, (Maturite - PricingDate).days,
                      Volatilite, YearBase)
 """
+
+# %%

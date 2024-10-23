@@ -10,7 +10,7 @@ from Classes.module_arbre import Arbre
 
 somme_proba = 1
 prix_min_sj = 0 #on part du principe que le prix du sous-jacent ne peut être négatif (ce qui dans le cas d'un actif purement financier sera à priori toujours vrai)
-epsilon = 0.000001 #notre seuil de pruning
+epsilon = 0.00000001 #notre seuil de pruning
 
 
 #%% Classes
@@ -100,9 +100,12 @@ class Noeud :
         """
         condition_1 = (self.prix_sj * (1 + 1/self.arbre.alpha) / 2 <= forward)
         condition_2 = (forward <= self.prix_sj * (1 + self.arbre.alpha) / 2)
-        if condition_1 and condition_2: 
+
+        # print(condition_1 and condition_2, self.position_arbre, self.prix_sj, forward)
+        if condition_1 and condition_2:
             return True
         else : 
+            #x = input('aaaadsioqjfosiejo')
             return False
         
     def bas_suivant(self) -> Noeud : 
@@ -138,16 +141,23 @@ class Noeud :
         """
         
         fw = self._calcul_forward()
-        
+
+        #if self.position_arbre > 390:
+            #print(self.position_arbre,self.prix_sj)
+            #print(self.position_arbre,prochain_noeud.prix_sj)
+            #a = input('noooo')
+
         if prochain_noeud.__test_noeud_proche(fw) : 
             prochain_noeud = prochain_noeud
             
-        elif fw > prochain_noeud.prix_sj : 
+        elif (not prochain_noeud.__test_noeud_proche(fw)) and fw > prochain_noeud.prix_sj : 
             while not prochain_noeud.__test_noeud_proche(fw) :
+                #print('lie haut')
                 prochain_noeud = prochain_noeud.haut_suivant()
-        
-        else : 
+        else:
+        #elif (not prochain_noeud.__test_noeud_proche(fw)) and fw < prochain_noeud.prix_sj : 
             while not prochain_noeud.__test_noeud_proche(fw) : 
+                #print('lie bas')
                 prochain_noeud = prochain_noeud.bas_suivant()
             
         return prochain_noeud
@@ -201,11 +211,13 @@ class Noeud :
             payoff = self.arbre.option.prix_exercice - self.prix_sj
         payoff = max(payoff, 0)
         return payoff
-
+    
     def calcul_valeur_intrinseque(self) -> None : 
         
         if self.futur_centre is None : 
+            #print(self.position_arbre,self.prix_sj,self.futur_centre)
             self.valeur_intrinseque = self.calcul_payoff()
+            #print("in")
         
         elif self.valeur_intrinseque == None : 
             
@@ -227,5 +239,82 @@ class Noeud :
                 valeur_intrinseque = max(self.calcul_payoff(), valeur_intrinseque)
                 
             self.valeur_intrinseque = valeur_intrinseque
+            #x = input("ecris")
+            #print("vecteur_proba", vecteur_proba)
+            #print("vecteur_prix", vecteur_prix)
+        #print('valeur_intrinseque',self.valeur_intrinseque )
+
+    def calcul_valeur_intrinsequed(self) -> None : 
+        print('aaaaaa')
+
+
+        if (self.futur_centre is None) and (self.futur_haut is None) and (self.futur_bas is None) : 
+            
+            self.valeur_intrinseque = self.calcul_payoff()
+            print('in',self.position_arbre,self.precedent_centre.prix_sj,self.prix_sj,self.valeur_intrinseque)
+       
+
+
+
+        elif self.valeur_intrinseque == None : 
+            #for futur_noeud in ["futur_haut", "futur_centre", "futur_bas"] :
+            SommeProba = 0
+            if not getattr(self, "futur_haut") is None :
+                # print(self.p_haut)
+                # print(self.futur_haut.prix_sj)
+                # attributs_non_none = [attr for attr in dir(self.futur_haut) 
+                #       if not callable(getattr(self.futur_haut, attr)) 
+                #       and not attr.startswith("__") 
+                #       and getattr(self.futur_haut, attr) is not None]
+
+                # print('=========',attributs_non_none)
+                # print(self.futur_haut)
+                print('bbbb')
+                ExpectationUp = self.p_haut * self.futur_haut.calcul_valeur_intrinseque()
+                SommeProba = SommeProba + self.p_haut
+                #x = input("ecris")
+            else:
+                ExpectationUp = 0
+            
+            if not getattr(self, "futur_centre") is None :
+                print('cc')
+                ExpectationMid = self.p_mid * self.futur_centre.calcul_valeur_intrinseque()
+                SommeProba = SommeProba + self.p_mid
+            else:
+                ExpectationMid = 0
+            
+            if not getattr(self, "futur_bas") is None :
+                ExpectationDown = self.p_bas * self.futur_bas.calcul_valeur_intrinseque()
+                SommeProba = SommeProba + self.p_bas
+            else:
+                ExpectationDown = 0
+
+                
+            self.valeur_intrinseque = (ExpectationUp + ExpectationMid + ExpectationDown) / self.arbre.facteur_actualisation / SommeProba
+            #x = input("ecris")
+            print(self.valeur_intrinseque)
+
+                # if getattr(self, futur_noeud) is None :
+                #     setattr(self, futur_noeud, Noeud(0, self.arbre, self.position_arbre+1))
+                #     noeud = getattr(self, futur_noeud)
+                #     noeud.valeur_intrinseque = 0
+                # else : 
+                #     noeud = getattr(self, futur_noeud)
+                #     if getattr(noeud, "valeur_intrinseque") is None  :
+                #         noeud.calcul_valeur_intrinseque()
+                    
+            # vecteur_proba = np.array([self.p_haut, self.p_mid, self.p_bas]) #vecteur composé des probabilités des noeuds futurs du noeud actuel
+            # vecteur_prix = np.array([self.futur_haut.valeur_intrinseque, self.futur_centre.valeur_intrinseque, self.futur_bas.valeur_intrinseque]) #
+            # valeur_intrinseque = self.arbre.facteur_actualisation * vecteur_prix.dot(vecteur_proba) #ici, produit scalaire des prix par leurs probabilités
+            
+            # if self.arbre.option.americaine : 
+            #     valeur_intrinseque = max(self.calcul_payoff(), valeur_intrinseque)
+                
+            # self.valeur_intrinseque = valeur_intrinseque
+        return(self.valeur_intrinseque)
+    
+
+    
 
             
+# %%
