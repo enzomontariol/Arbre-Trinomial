@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from Classes.module_marche import DonneeMarche
 from Classes.module_option import Option
-from Classes.module_arbre import Arbre
+from Python.Classes.module_arbre_noeud import Arbre
 from Classes.module_enums import MethodeConstructionArbre
 
 

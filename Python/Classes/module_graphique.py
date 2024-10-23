@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.lines import Line2D
     
-from Classes.module_arbre import Arbre
+from Python.Classes.module_arbre_noeud import Arbre
   
   
 #%% Classes  

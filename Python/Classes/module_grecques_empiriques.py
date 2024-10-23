@@ -2,7 +2,7 @@ from typing import Union
 import datetime as dt
 import copy
 
-from module_arbre import Arbre
+from Python.Classes.module_arbre_noeud import Arbre
 
 class GrecquesEmpiriques : 
     def __init__(self, arbre : Arbre, var_s : float = 0.01, var_v : float = 0.01, var_t : int = 1, var_r : float = 0.01):
@@ -134,7 +134,7 @@ if __name__ == "__main__" :
 
     from module_marche import DonneeMarche
     from module_option import Option
-    from module_arbre import Arbre
+    from Python.Classes.module_arbre_noeud import Arbre
 
     sys.setrecursionlimit(1000000000)
 
