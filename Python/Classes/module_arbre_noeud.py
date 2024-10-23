@@ -154,7 +154,7 @@ class Noeud :
             
         return prochain_noeud
 
-    def creer_prochain_block(self, prochain_noeud : Noeud) -> None :
+    def __creer_prochain_block(self, prochain_noeud : Noeud) -> None :
         """Nous permet de créer un bloc de noeud complet.
 
         Args:
@@ -196,18 +196,26 @@ class Noeud :
             self.futur_bas = self.futur_centre.bas_suivant()
             self.futur_bas.p_cumule += self.p_cumule * self.p_bas
 
-    def calcul_payoff(self) -> float : 
+    def __calcul_payoff(self) -> float : 
+        """Calcul du payoff selon le type de contrat
+
+        Returns:
+            float: le payoff
+        """
+        
         if self.arbre.option.call : 
             payoff = self.prix_sj - self.arbre.option.prix_exercice
         else : 
             payoff = self.arbre.option.prix_exercice - self.prix_sj
-        payoff = max(payoff, 0)
+        payoff = max(payoff, prix_min_sj)
         return payoff
 
-    def calcul_valeur_intrinseque(self) -> None : 
+    def __calcul_valeur_intrinseque(self) -> None : 
+        """Nous permet de calculer la valeur intrinseque du noeud, en prenant compte du type d'option considéré
+        """
         
         if self.futur_centre is None : 
-            self.valeur_intrinseque = self.calcul_payoff()
+            self.valeur_intrinseque = self.__calcul_payoff()
         
         elif self.valeur_intrinseque == None : 
             
@@ -219,14 +227,14 @@ class Noeud :
                 else : 
                     noeud = getattr(self, futur_noeud)
                     if getattr(noeud, "valeur_intrinseque") is None  :
-                        noeud.calcul_valeur_intrinseque()
+                        noeud.__calcul_valeur_intrinseque()
                     
             vecteur_proba = np.array([self.p_haut, self.p_mid, self.p_bas]) #vecteur composé des probabilités des noeuds futurs du noeud actuel
             vecteur_prix = np.array([self.futur_haut.valeur_intrinseque, self.futur_centre.valeur_intrinseque, self.futur_bas.valeur_intrinseque]) #
             valeur_intrinseque = self.arbre.facteur_actualisation * vecteur_prix.dot(vecteur_proba) #ici, produit scalaire des prix par leurs probabilités
             
             if self.arbre.option.americaine : 
-                valeur_intrinseque = max(self.calcul_payoff(), valeur_intrinseque)
+                valeur_intrinseque = max(self.__calcul_payoff(), valeur_intrinseque)
                 
             self.valeur_intrinseque = valeur_intrinseque
 
@@ -256,7 +264,7 @@ class Arbre :
         self.racine = None
         self.prix_option = None
            
-    def get_temps (self) -> float : 
+    def __get_temps (self) -> float : 
         """Renvoie le temps à maturité exprimé en nombre d'année .
 
         Returns:
@@ -272,7 +280,7 @@ class Arbre :
             float: l'intervalle de temps delta_t
         """
         
-        return self.get_temps() / self.nb_pas
+        return self.__get_temps() / self.nb_pas
     
     def __calcul_facteur_capitalisation(self) -> float : 
         """Permet de calculer le facteur de capitalisation que nous utiliserons par la suite
@@ -319,7 +327,7 @@ class Arbre :
     def __planter_arbre(self) -> None : 
         """Procédure nous permettant de construire notre arbre
         """        
-        def creer_prochain_block_haut(actuel_centre : Noeud, prochain_noeud : Noeud) -> None : 
+        def __creer_prochain_block_haut(actuel_centre : Noeud, prochain_noeud : Noeud) -> None : 
             """Procédure nous permettant de construire un bloc complet vers le haut à partir d'un noeud de référence et d'un noeud futur
 
             Args:
@@ -332,10 +340,10 @@ class Arbre :
             #Nous iterrons en partant du tronc et en nous dirigeant vers l'extrêmité haute d'une colonne afin de créer des noeuds sur la colonne suivante
             while not temp_centre.haut is None : 
                 temp_centre = temp_centre.haut
-                temp_centre.creer_prochain_block(temp_futur_centre)
+                temp_centre.__creer_prochain_block(temp_futur_centre)
                 temp_futur_centre = temp_futur_centre.haut
                 
-        def creer_prochain_block_bas(actuel_centre : Noeud, prochain_noeud : Noeud) -> None : 
+        def __creer_prochain_block_bas(actuel_centre : Noeud, prochain_noeud : Noeud) -> None : 
             """Procédure nous permettant de construire un bloc complet vers le bas à partir d'un noeud de référence et d'un noeud futur
 
             Args:
@@ -348,10 +356,10 @@ class Arbre :
             #Nous iterrons en partant du tronc et en nous dirigeant vers l'extrêmité basse d'une colonne afin de créer des noeuds sur la colonne suivante
             while not temp_centre.bas is None : 
                 temp_centre = temp_centre.bas
-                temp_centre.creer_prochain_block(temp_futur_centre)
+                temp_centre.__creer_prochain_block(temp_futur_centre)
                 temp_futur_centre = temp_futur_centre.bas
                 
-        def creer_nouvelle_col(self, actuel_centre : Noeud) -> Noeud :
+        def __creer_nouvelle_col(self, actuel_centre : Noeud) -> Noeud :
             """Procédure nous permettant de créer entièrement une colonne de notre arbre.
 
             Args:
@@ -363,9 +371,9 @@ class Arbre :
             
             prochain_noeud = Noeud(actuel_centre._calcul_forward(), self, actuel_centre.position_arbre + 1)
             
-            actuel_centre.creer_prochain_block(prochain_noeud)
-            creer_prochain_block_haut(actuel_centre, prochain_noeud)
-            creer_prochain_block_bas(actuel_centre, prochain_noeud)
+            actuel_centre.__creer_prochain_block(prochain_noeud)
+            __creer_prochain_block_haut(actuel_centre, prochain_noeud)
+            __creer_prochain_block_bas(actuel_centre, prochain_noeud)
             
             return prochain_noeud
         
@@ -377,12 +385,12 @@ class Arbre :
         
         #Nous créons ici le premier bloc. Nous itérerons ensuite sur autant de pas que nécéssaire afin de créer les colonnes suivantes.
         for pas in range(self.nb_pas) :
-            actuel_centre = creer_nouvelle_col(self, actuel_centre)
+            actuel_centre = __creer_nouvelle_col(self, actuel_centre)
             
     def pricer_arbre(self) -> None : 
         """Fonction qui nous permettra de construire l'arbre puis de le valoriser pour enfin donner la valeur à l'attribut "prix_option".
         """
         self.__planter_arbre()
         
-        self.racine.calcul_valeur_intrinseque()
+        self.racine.__calcul_valeur_intrinseque()
         self.prix_option = self.racine.valeur_intrinseque
