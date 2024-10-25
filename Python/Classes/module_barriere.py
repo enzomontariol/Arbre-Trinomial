@@ -8,6 +8,9 @@ from module_enums import TypeBarriere, DirectionBarriere
 
 @dataclass
 class Barriere:
+    """Classe utilisée pour représenter une barrière pour une option considérée
+    """
+    
     def __init__(self, niveau_barriere : float, type_barriere : TypeBarriere | None, direction_barriere : DirectionBarriere | None) -> None: 
         self.niveau_barriere = niveau_barriere
         self.type_barriere = type_barriere
