@@ -27,6 +27,7 @@ class Arbre_Graph :
             
         if self.arbre.nb_pas > 10 : 
             raise ValueError("Nombre de pas dans l'arbre trop important pour être affiché. Veuillez choisir un nombre de pas inférieur à 10.")
+        
     def afficher_arbre(self) -> None:
         """Fonction nous permettant de réaliser le graphique en positionnant les nœuds selon le prix sous-jacent."""
         
@@ -36,7 +37,7 @@ class Arbre_Graph :
         positions = {}
         queue = [(self.arbre.racine, 0)]
         
-        # Access the barrier level from the option data
+        # le niveau de la barrière
         niveau_barriere = self.arbre.option.barriere.niveau_barriere
 
         # Déterminer le prix max et min des sous-jacents pour ajuster l'échelle
@@ -98,7 +99,7 @@ class Arbre_Graph :
         # Ajout d'une ligne horizontale pour représenter la barrière à son niveau correct
         plt.axhline(y=niveau_barriere, color='green', linestyle='--', label=f'Barrière : {niveau_barriere:.2f}')
         
-        # Ajout d'un titre au graphique
+        # Ajout d'un titre au graphique, on fait s'adapter le titre à ce qu'on graphe
         
         if self.arbre.option.call : 
             type_option = "call"
@@ -120,6 +121,8 @@ class Arbre_Graph :
         plt.title(f"Arbre Trinomial, option {type_option} {exercice_option}, strike {strike}{barriere_titre}", fontsize=16)
 
         # Ajout d'une légende
+        
+        #casq barrière
         if self.arbre.option.barriere.direction_barriere : 
             legend_elements = [
                 Line2D([0], [0], marker='o', color='w', label='Noeud:',
@@ -130,6 +133,8 @@ class Arbre_Graph :
                 Line2D([0], [0], color='red', lw=2, label='Probabilité de passage'),
                 Line2D([0], [0], color='green', lw=2, linestyle='--', label=f'Barrière : {niveau_barriere:.2f}')
             ]
+            
+        #Cas sans barrière
         else : 
             legend_elements = [
                 Line2D([0], [0], marker='o', color='w', label='Noeud:',
