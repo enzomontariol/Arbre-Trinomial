@@ -1,68 +1,67 @@
+#%%Imports
 
 import numpy as np
 from scipy.stats import norm
-from datetime import datetime, date, timedelta
 import time
 
-def Verif_input(Optiontype,Exercicetype):
-    if Optiontype not in ["Call","Put"] and Exercicetype == "Européen": 
-        return "Merci de rentrer Call ou Put"
-
-def BS_Pricer(Optiontype,Exercicetype,StockPrice,Strike,TauxInteret,Maturite,PricingDate,Volatilite):
-    start_time = time.time()
-    Verif_input(Optiontype,Exercicetype)
+from module_arbre_noeud import Arbre
     
-    d1 = (np.log(StockPrice/Strike) + (TauxInteret + 0.5 * Volatilite**2)*(Maturite-PricingDate).days) / (Volatilite*np.sqrt((Maturite-PricingDate).days))
-    d2 = d1 - Volatilite*np.sqrt((Maturite-PricingDate).days)
-    Nd1 = norm.cdf(d1, 0, 1)
-    Nd2 = norm.cdf(d2, 0, 1)
-
-    if Optiontype == "Call":
-        BSPrice = StockPrice*Nd1 - Strike*np.exp(-TauxInteret*(Maturite-PricingDate).days)*Nd2
-    else:
-        BSPrice = -StockPrice*(1-Nd1) + Strike*np.exp(-TauxInteret*(Maturite-PricingDate).days)*(1-Nd2)
-    BSTime = time.time() - start_time
-    
-    return BSPrice, BSTime
-#print(BS_Pricer('Call','European',100,100,2/100,1.002739,0.1))
-
-def BS_Delta(Optiontype,Exercicetype,StockPrice,Strike,TauxInteret,Maturite,PricingDate,Volatilite,base):
-    Verif_input(Optiontype,Exercicetype)
-    d1 = (np.log(StockPrice/Strike) + (TauxInteret + 0.5 * Volatilite**2)*(Maturite-PricingDate).days) / (Volatilite*np.sqrt((Maturite-PricingDate).days))
-    
-    if Optiontype not in ["Call"]:
-        return norm.cdf(d1, 0, 1)
-    else:
-        return norm.cdf(d1, 0, 1) - 1
-    
-def BS_Gamma(Optiontype,Exercicetype,StockPrice,Strike,TauxInteret,Maturite,PricingDate,Volatilite,base):
-    Verif_input(Optiontype,Exercicetype)
-    d1 = (np.log(StockPrice/Strike) + (TauxInteret + 0.5 * Volatilite**2)*(Maturite-PricingDate).days) / (Volatilite*np.sqrt((Maturite-PricingDate).days))
-    
-    return norm.pdf(d1, 0, 1) / (StockPrice*Volatilite * np.sqrt((Maturite-PricingDate).days))
-
-def BS_Vega(Optiontype,Exercicetype,StockPrice,Strike,TauxInteret,Maturite,PricingDate,Volatilite,base):
-    Verif_input(Optiontype,Exercicetype)
-    d1 = (np.log(StockPrice/Strike) + (TauxInteret + 0.5 * Volatilite**2)*(Maturite-PricingDate).days) / (Volatilite*np.sqrt((Maturite-PricingDate).days))
-    
-    return StockPrice*norm.pdf(d1, 0, 1) * np.sqrt((Maturite-PricingDate).days)
-
-def BS_Theta(Optiontype,Exercicetype,StockPrice,Strike,TauxInteret,Maturite,PricingDate,Volatilite,base):
-    Verif_input(Optiontype,Exercicetype)
-    d1 = (np.log(StockPrice/Strike) + (TauxInteret + 0.5 * Volatilite**2)*(Maturite-PricingDate).days) / (Volatilite*np.sqrt((Maturite-PricingDate).days))
-    d2 = d1 - Volatilite*np.sqrt((Maturite-PricingDate).days)    
-    if Optiontype not in ["Call"]:
-        return (-StockPrice*norm.pdf(d1, 0, 1)*Volatilite/(2*np.sqrt((Maturite-PricingDate).days)) - TauxInteret*Strike*np.exp(-TauxInteret*(Maturite-PricingDate).days)*norm.cdf(d2, 0, 1))/base
-    else:
-        return (-StockPrice*norm.pdf(d1, 0, 1)*Volatilite/(2*np.sqrt((Maturite-PricingDate).days)) + TauxInteret*Strike*np.exp(-TauxInteret*(Maturite-PricingDate).days)*norm.cdf(-d2, 0, 1))/base
+class BlackAndScholes : 
+    def __init__(self, arbre : Arbre):
         
-def BS_Rho(Optiontype,Exercicetype,StockPrice,Strike,TauxInteret,Maturite,PricingDate,Volatilite,base):
-    Verif_input(Optiontype,Exercicetype)
-    d1 = (np.log(StockPrice/Strike) + (TauxInteret + 0.5 * Volatilite**2)*(Maturite-PricingDate).days) / (Volatilite*np.sqrt((Maturite-PricingDate).days))
-    d2 = d1 - Volatilite*np.sqrt((Maturite-PricingDate).days)
-
-    if Optiontype not in ["Call"]:
-        return Strike*(Maturite-PricingDate).days*np.exp(-TauxInteret*(Maturite-PricingDate).days)*norm.cdf(d2, 0, 1)
-    else:
-        return -Strike*(Maturite-PricingDate).days*np.exp(-TauxInteret*(Maturite-PricingDate).days)*norm.cdf(-d2, 0, 1)
-
+        self.option = arbre.option
+        self.is_european = not self.option.americaine
+        self.type_option = "Call" if self.option.call else "Put"
+        self.prix_sj = arbre.donnee_marche.prix_spot
+        self.strike = self.option.prix_exercice
+        self.risk_free = arbre.donnee_marche.taux_interet
+        self.maturite = arbre.__get_temps()
+        self.volatilite = arbre.donnee_marche.volatilite
+        
+        if not self.is_european : 
+            raise ValueError("Black and Scholes n'est applicable que dans le cas d'options européennes.")
+        
+        self.d1 = (np.log(self.prix_sj/self.strike) + (self.risk_free + 0.5 * (self.volatilite**2))*self.maturite) / (self.volatilite * np.sqrt(self.maturite))
+        self.d2 = self.d1 -self.volatilite * np.sqrt(self.maturite)
+        
+    def bs_pricer(self):
+        
+        if self.type_option == "Call" : 
+            bsprice = self.prix_sj * norm.cdf(self.d1,0,1) - self.strike * np.exp(-self.risk_free * self.maturite) * norm.cdf(self.d2,0,1)
+        else : #on considère ici que nous sommes dans le cas du put
+            bsprice = self.strike * np.exp(-self.risk_free * self.maturite) * norm.cdf(-self.d2,0,1) - self.prix_sj * norm.cdf(-self.d1,0,1)
+            
+        return bsprice
+    
+    def bs_delta(self):
+        
+        if self.type_option == "Call" : 
+            delta = norm.cdf(self.d1,0,1)
+        else : 
+            delta = norm.cdf(self.d1,0,1) - 1
+            
+        return delta
+    
+    def bs_theta(self):
+        
+        if self.type_option == "Call" : 
+            theta = -(self.prix_sj * norm.pdf(self.d1,0,1) * self.volatilite / 2 * np.sqrt(self.maturite)) - self.risk_free * self.strike * np.exp(-self.risk_free * self.maturite) * norm.cdf(self.d2,0,1)
+        else : 
+            theta = -(self.prix_sj * norm.pdf(self.d1,0,1) * self.volatilite / 2 * np.sqrt(self.maturite)) + self.risk_free * self.strike * np.exp(-self.risk_free * self.maturite) * norm.cdf(-self.d2,0,1)
+        
+        return theta
+    
+    def bs_gamma(self):
+        return norm.pdf(self.d1,0,1)/self.prix_sj*self.volatilite*np.sqrt(self.maturite)
+    
+    def bs_vega(self):
+        return self.prix_sj*np.sqrt(self.maturite)*norm.pdf(self.d1)
+    
+    def bs_rho(self):
+        
+        if self.type_option == "Call" :
+            rho = self.strike * self.maturite * np.exp(-self.risk_free * self.maturite) * norm.cdf(self.d2,0,1)
+        else : 
+            rho = -self.strike * self.maturite * np.exp(-self.risk_free * self.maturite) * norm.cdf(-self.d2,0,1)
+            
+        return rho
