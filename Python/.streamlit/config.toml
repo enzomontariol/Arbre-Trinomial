@@ -1,2 +1,12 @@
+[global]
+developmentMode = false
+
 [server]
 runOnSave = false
+port = 8502
+
+[theme]
+base="light"
+primaryColor="#2809f1"
+backgroundColor="#d6d6d6"
+font="serif"
