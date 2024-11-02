@@ -6,6 +6,6 @@ runOnSave = false
 
 [theme]
 base="light"
-primaryColor="#2809f1"
+primaryColor="#0068C9"
 backgroundColor="#d6d6d6"
 font="serif"
