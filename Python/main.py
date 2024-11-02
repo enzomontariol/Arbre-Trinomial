@@ -180,8 +180,9 @@ with tab2 :
         if pruning : 
             epsilon_arbre = float("1e-" + str(st.number_input('Seuil de pruning (1e-)', min_value = 1, max_value=100, value = 15)))
             st.markdown(epsilon_arbre)
-
-    arbre = Arbre(nb_pas=nb_pas, donnee_marche=donnee_marche, option=option, convention_base_calendaire=convention_base_calendaire, parametre_alpha=parametre_alpha, pruning=pruning, epsilon=epsilon_arbre)
+            arbre = Arbre(nb_pas=nb_pas, donnee_marche=donnee_marche, option=option, convention_base_calendaire=convention_base_calendaire, parametre_alpha=parametre_alpha, pruning=pruning, epsilon=epsilon_arbre)
+        else :
+            arbre = Arbre(nb_pas=nb_pas, donnee_marche=donnee_marche, option=option, convention_base_calendaire=convention_base_calendaire, parametre_alpha=parametre_alpha, pruning=pruning)
 
 with tab1:
 
