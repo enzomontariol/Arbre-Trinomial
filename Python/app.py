@@ -31,25 +31,8 @@ st.set_page_config(layout="wide")
 # Titre de l'application
 st.title("Trinomial Tree")
 
-memo, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9= st.tabs(["Memo","Pricing", "Plus d'options", "Graphique", "Greeks","Comparaison avec Black-Scholes","Comparaison seuil de pruning", "Comparaison strike", "Comparaison volatilité", "Comparaison taux d'intérêt"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9= st.tabs(["Pricing", "Plus d'options", "Graphique", "Greeks","Comparaison avec Black-Scholes","Comparaison seuil de pruning", "Comparaison strike", "Comparaison volatilité", "Comparaison taux d'intérêt"])
     
-###########################################################################
-################################ Mémo 1 ###################################
-########################################################################### 
-
-with memo:
-    st.subheader("Mémo")
-    st.write("expliquer si on a fait des trucs different en python et vba (pour la construction),  expliquer les resultats differents et en terme de temps")
-    
-    st.write("Section 1")
-    st.divider()
-    st.write("Section 2")
-    st.markdown("""
-    - **Facile à utiliser** : Aucun besoin de HTML, CSS ou JavaScript.
-    - **Interactive** : Parfait pour la visualisation de données et les applications de Machine Learning.
-    """)
-    st.info("Essayez d'ajouter vos propres widgets et contenu interactif.")
-
 ###########################################################################
 ###################### Onglet 1 : Inputs Utilisateur ######################
 ########################################################################### 
