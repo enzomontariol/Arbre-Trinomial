@@ -172,7 +172,7 @@ with tab2 :
 
     with col11:
         # on garde le format float, pour garder la possibilité de mettre 365.25
-        parametre_alpha = st.number_input("Entrez le paramètre alpha :", format="%.0f",value=3.0)
+        parametre_alpha = st.number_input("Entrez le paramètre alpha :", min_value=2.0,max_value=4.0, value=3.0, step=0.1)
         convention_base_calendaire = st.selectbox('Choisissez la base annuelle :', [nombre.value for nombre in ConventionBaseCalendaire])
 
     with col3:
