@@ -1,16 +1,9 @@
-#TODO
-
-# note: faire les commentaires et renommer variable
-# mettre arg facultative dans main pour alpha et base
-# modifié les inputs des fonctions ?
-
 #%% Imports
 
 import streamlit as st
 import datetime as dt
 from datetime import timedelta
 import numpy as np 
-import pandas as pd
 import time
 import sys
 import os
@@ -34,40 +27,9 @@ from Classes.module_grecques_empiriques import GrecquesEmpiriques
 
 today= dt.date.today()
 
+#%% Streamlit
+
 st.set_page_config(layout="wide")
-
-# st.markdown("""
-#     <style>
-#     /* Changer la couleur de fond de la page */
-#     .stApp {
-#         background-color: #215C98;
-#     }
-
-#     /* Changer la couleur des titres */
-#     .stApp h1, h2, h3 {
-#         color: #FFFFFF; 
-#     }
-
-#     /* Changer la couleur des textes */
-#     .stApp p {
-#         color: #FFFFFF; /* Gris foncé */
-#     }
-
-#     /* Personnalisation des boutons */
-#     button {
-#         background-color: #DAE9F8; /* Vert */
-#         color: white;
-#         border-radius: 10px;
-#         padding: 10px 20px;
-#     }
-
-#     button:hover {
-#         background-color: #DAE9F8;
-#     }
-
-#     </style>
-#     """, unsafe_allow_html=True)
-
 
 # Titre de l'application
 st.title("Trinomial Tree")
