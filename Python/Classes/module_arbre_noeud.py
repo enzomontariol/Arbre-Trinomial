@@ -3,23 +3,23 @@ from __future__ import annotations
 
 import numpy as np
 
-from module_marche import DonneeMarche
-from module_option import Option
-from module_enums import ConventionBaseCalendaire, TypeBarriere, DirectionBarriere
+from Classes.module_marche import DonneeMarche
+from Classes.module_option import Option
+from Classes.module_enums import ConventionBaseCalendaire, TypeBarriere, DirectionBarriere
 
 #%%Constantes
 
 somme_proba = 1
 min_payoff = 0
 prix_min_sj = 0 #on part du principe que le prix du sous-jacent ne peut être négatif (ce qui dans le cas d'un actif purement financier sera à priori toujours vrai)
-epsilon = 0.000001 #notre seuil de pruning
+epsilon = 1e-15 #notre seuil de pruning par défaut
 
 #%% Classes
 
 class Arbre : 
     def __init__(self, nb_pas : int, donnee_marche : DonneeMarche, option : Option,
-                 convention_base_calendaire : ConventionBaseCalendaire = ConventionBaseCalendaire._365.value, 
-                 pruning : bool = True) -> None:
+                 convention_base_calendaire : ConventionBaseCalendaire = ConventionBaseCalendaire._365.value,
+                 parametre_alpha : float = 3, pruning : bool = True, epsilon : float = epsilon) -> None:
         """Initialisation de la classe
 
         Args:
@@ -33,7 +33,9 @@ class Arbre :
         self.donnee_marche = donnee_marche
         self.option = option
         self.convention_base_calendaire = convention_base_calendaire
+        self.parametre_alpha = parametre_alpha
         self.pruning = pruning
+        self.epsilon = epsilon
         self.delta_t = self.__calcul_delta_t()
         self.facteur_capitalisation = self.__calcul_facteur_capitalisation()
         self.facteur_actualisation = self.__calcul_facteur_actualisation()
@@ -42,7 +44,7 @@ class Arbre :
         self.racine = None
         self.prix_option = None
            
-    def __get_temps (self) -> float : 
+    def get_temps (self) -> float : 
         """Renvoie le temps à maturité exprimé en nombre d'année .
 
         Returns:
@@ -56,7 +58,7 @@ class Arbre :
         Returns:
             float: l'intervalle de temps delta_t
         """
-        return self.__get_temps() / self.nb_pas
+        return self.get_temps() / self.nb_pas
     
     def __calcul_facteur_capitalisation(self) -> float : 
         """Permet de calculer le facteur de capitalisation que nous utiliserons par la suite
@@ -81,7 +83,7 @@ class Arbre :
         Returns:
             float: Nous renvoie le coefficient alpha
         """
-        alpha = np.exp(self.donnee_marche.volatilite * np.sqrt(3) * np.sqrt(self.delta_t))
+        alpha = np.exp(self.donnee_marche.volatilite * np.sqrt(self.parametre_alpha) * np.sqrt(self.delta_t))
         
         return alpha 
     
@@ -175,6 +177,8 @@ class Noeud:
             arbre (Arbre): l'arbre auquel est rattaché notre noeud
             position_arbre (int): decrit la position du noeud dans l'arbre sur l'axe horizontal
         """
+        self.epsilon = arbre.epsilon
+        
         self.prix_sj = prix_sj
         self.arbre = arbre
         self.position_arbre = position_arbre 
@@ -313,7 +317,7 @@ class Noeud:
         
         if self.arbre.pruning : 
             if  self.haut == None :
-                if self.p_cumule * self.p_haut >= epsilon :  
+                if self.p_cumule * self.p_haut >= self.epsilon :  
                     self.futur_haut = self.futur_centre.haut_suivant()
                     self.futur_haut.p_cumule +=  self.p_cumule *  self.p_haut           
                 else : 
@@ -324,7 +328,7 @@ class Noeud:
                 self.futur_haut.p_cumule += self.p_cumule * self.p_haut
                 
             if self.bas == None : 
-                if self.p_cumule * self.p_bas >= epsilon : 
+                if self.p_cumule * self.p_bas >= self.epsilon : 
                     self.futur_bas = self.futur_centre.bas_suivant()
                     self.futur_bas.p_cumule += self.p_cumule * self.p_bas
                 else : 

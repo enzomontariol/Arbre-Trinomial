@@ -1,10 +1,11 @@
-#%%Imports
+#%% Imports
 
 import numpy as np
 from scipy.stats import norm
-import time
 
-from module_arbre_noeud import Arbre
+from Classes.module_arbre_noeud import Arbre
+  
+#%% Classes
     
 class BlackAndScholes : 
     def __init__(self, arbre : Arbre):
@@ -15,7 +16,7 @@ class BlackAndScholes :
         self.prix_sj = arbre.donnee_marche.prix_spot
         self.strike = self.option.prix_exercice
         self.risk_free = arbre.donnee_marche.taux_interet
-        self.maturite = arbre.__get_temps()
+        self.maturite = arbre.get_temps()
         self.volatilite = arbre.donnee_marche.volatilite
         
         if not self.is_european : 
@@ -33,7 +34,7 @@ class BlackAndScholes :
             
         return bsprice
     
-    def bs_delta(self):
+    def delta(self):
         
         if self.type_option == "Call" : 
             delta = norm.cdf(self.d1,0,1)
@@ -42,26 +43,26 @@ class BlackAndScholes :
             
         return delta
     
-    def bs_theta(self):
+    def theta(self):
         
         if self.type_option == "Call" : 
             theta = -(self.prix_sj * norm.pdf(self.d1,0,1) * self.volatilite / 2 * np.sqrt(self.maturite)) - self.risk_free * self.strike * np.exp(-self.risk_free * self.maturite) * norm.cdf(self.d2,0,1)
         else : 
             theta = -(self.prix_sj * norm.pdf(self.d1,0,1) * self.volatilite / 2 * np.sqrt(self.maturite)) + self.risk_free * self.strike * np.exp(-self.risk_free * self.maturite) * norm.cdf(-self.d2,0,1)
         
-        return theta
+        return theta/100
     
-    def bs_gamma(self):
-        return norm.pdf(self.d1,0,1)/self.prix_sj*self.volatilite*np.sqrt(self.maturite)
+    def gamma(self):
+        return norm.pdf(self.d1,0,1)/self.prix_sj*self.volatilite*np.sqrt(self.maturite)*1000
     
-    def bs_vega(self):
-        return self.prix_sj*np.sqrt(self.maturite)*norm.pdf(self.d1)
+    def vega(self):
+        return self.prix_sj*np.sqrt(self.maturite)*norm.pdf(self.d1)/100
     
-    def bs_rho(self):
+    def rho(self):
         
         if self.type_option == "Call" :
             rho = self.strike * self.maturite * np.exp(-self.risk_free * self.maturite) * norm.cdf(self.d2,0,1)
         else : 
             rho = -self.strike * self.maturite * np.exp(-self.risk_free * self.maturite) * norm.cdf(-self.d2,0,1)
             
-        return rho
+        return rho/100

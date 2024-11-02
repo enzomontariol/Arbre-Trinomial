@@ -2,7 +2,7 @@
 import datetime as dt
 from dataclasses import dataclass
 
-from module_barriere import Barriere
+from Classes.module_barriere import Barriere
 
 #%% Classes
 

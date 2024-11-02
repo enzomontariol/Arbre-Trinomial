@@ -9,9 +9,9 @@ class ConventionBaseCalendaire(Enum) :
     _360 = 360
     
 class TypeBarriere(Enum) : 
-    knock_in = "knock-in"
-    knock_out = "knock-out"
+    knock_in = "Knock-in"
+    knock_out = "Knock-out"
     
 class DirectionBarriere(Enum) : 
-    up = "up"
-    down = "down"
+    up = "Up"
+    down = "Down"
