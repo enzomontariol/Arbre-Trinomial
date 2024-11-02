@@ -405,7 +405,7 @@ with tab8 :
         @st.cache_resource
         def call_vol_comparison():
             step_list=[300]
-            vol_list=np.arange(0.01,1.0,0.001)
+            vol_list=np.arange(0.01,1.0,0.01)
             return VolComparison(max_cpu,step_list, vol_list)
         
         vol_comparison = call_vol_comparison()
