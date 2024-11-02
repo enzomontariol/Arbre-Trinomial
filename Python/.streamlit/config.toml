@@ -3,7 +3,6 @@ developmentMode = false
 
 [server]
 runOnSave = false
-port = 8502
 
 [theme]
 base="light"
