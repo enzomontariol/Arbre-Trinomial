@@ -14,13 +14,10 @@ from Classes.module_enums import TypeBarriere, DirectionBarriere, ConventionBase
 from Classes.module_marche import DonneeMarche
 from Classes.module_option import Option
 from Classes.module_barriere import Barriere
-from Classes.module_arbre_noeud import Arbre, epsilon
+from Classes.module_arbre_noeud import Arbre
 from Classes.module_graphique import ArbreGraph
 from Classes.module_pricing_analysis import BsComparison, StrikeComparison, VolComparison, RateComparison
-
-# import des fonctions Black Scholes
 from Classes.module_black_scholes import BlackAndScholes
-
 from Classes.module_grecques_empiriques import GrecquesEmpiriques
 
 #%% Constantes
