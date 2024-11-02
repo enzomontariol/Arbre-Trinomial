@@ -232,23 +232,23 @@ with tab3 :
 # ########################################################################### 
 
 with tab4 : 
+    
+    with st.expander('Paramètres grecques empiriques') : 
+        st.markdown('Valeurs utilisées lors du calcul de la différence centrée finie :')
+        cols = st.columns(4)
+        with cols[0] :
+            var_s = st.number_input('Variation prix sous-jacent (% spot):', 0.001, 1.0, 0.01, 0.01)
+        with cols[1] :
+            var_v = st.number_input('Variation de la volatilité (pts %)', 0.001, 1.0, 0.01, 0.01)
+        with cols[2] :
+            var_t = st.number_input('Variation du temps à maturité (nb jour)', 1, 10, 1, 1)
+        with cols[3] :
+            var_r = st.number_input('''Varitation du taux d'intérêt (pts %)''', 0.001, 1.0, 0.01, 0.01)
         
     if arbre.prix_option is not None : 
         
         st.subheader('Grecques empiriques : ')
-        
-        with st.expander('Paramètres grecques') : 
-            st.markdown('Valeurs utilisées lors du calcul de la différence centrée finie :')
-            cols = st.columns(4)
-            with cols[0] :
-                var_s = st.number_input('Variation prix sous-jacent (% spot):', 0.001, 1.0, 0.01, 0.01)
-            with cols[1] :
-                var_v = st.number_input('Variation de la volatilité (pts %)', 0.001, 1.0, 0.01, 0.01)
-            with cols[2] :
-                var_t = st.number_input('Variation du temps à maturité (nb jour)', 1, 10, 1, 1)
-            with cols[3] :
-                var_r = st.number_input('''Varitation du taux d'intérêt (pts %)''', 0.001, 1.0, 0.01, 0.01)
-            
+                    
         grecques_empiriques = GrecquesEmpiriques(arbre, var_s=var_s, var_v=var_v, var_t=var_t, var_r=var_r)
         
         with st.spinner('''Calcul des grecques en cours...''') :
