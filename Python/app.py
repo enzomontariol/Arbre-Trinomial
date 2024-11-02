@@ -7,7 +7,9 @@ import numpy as np
 import time
 import sys
 import os
+import warnings
 
+warnings.filterwarnings("ignore")
 sys.setrecursionlimit(1000000000)
 
 from Classes.module_enums import TypeBarriere, DirectionBarriere, ConventionBaseCalendaire
@@ -28,8 +30,12 @@ today= dt.date.today()
 
 st.set_page_config(layout="wide")
 
+
 # Titre de l'application
-st.title("Trinomial Tree")
+st.title("Trinomial Tree - [LIN Cécile](%s), [MONTARIOL Enzo](%s)" % (
+    'https://www.linkedin.com/in/c%C3%A9cile-lin-196b751b5/',
+    'https://www.linkedin.com/in/enzomontariol/'
+))
 
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9= st.tabs(["Pricing", "Plus d'options", "Graphique", "Greeks","Comparaison avec Black-Scholes","Comparaison seuil de pruning", "Comparaison strike", "Comparaison volatilité", "Comparaison taux d'intérêt"])
     
